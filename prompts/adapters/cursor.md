@@ -65,7 +65,7 @@ Inspect:
 - the availability and storage model of Cursor User Rules through supported
   Cursor surfaces, without reading their content;
 - `<home>/.agents/hooks/cursor/`;
-- the installed Simple Soul memory root and protocol;
+- the installed Wiki Soul memory root and protocol;
 - available local runtimes and their exact command semantics.
 
 In current injected mode, modify only `<home>/.cursor/hooks.json` and marked
@@ -98,8 +98,8 @@ user-global instruction file that can be merged safely and idempotently:
    without the HTML boundary comments.
 3. Replace the memory and protocol placeholders with validated native absolute
    paths.
-4. Put those rules in one `SIMPLE SOUL OPERATING RULES V1` section immediately
-   before the common `SIMPLE SOUL REFERENCE DATA V1` envelope.
+4. Put those rules in one `WIKI SOUL OPERATING RULES V1` section immediately
+   before the common `WIKI SOUL REFERENCE DATA V1` envelope.
 5. Return the combined text through `sessionStart.additional_context` and
    `subagentStart.user_message`.
 6. Keep the complete model-visible output, including the operating rules,
@@ -262,12 +262,12 @@ For each planned event:
 - set a short explicit timeout proven sufficient by tests;
 - set `failClosed: false` explicitly;
 - omit matchers for `sessionStart` and `subagentStart`;
-- update a prior exact Simple Soul entry in place;
+- update a prior exact Wiki Soul entry in place;
 - never duplicate an exact command;
 - never replace an existing event array;
 - never weaken enterprise or team policy.
 
-Detect Simple Soul ownership through the exact command path and the generated
+Detect Wiki Soul ownership through the exact command path and the generated
 source marker. A missing or unmarked prior target is a conflict.
 
 After writing, parse the file again, compare the structural diff with the

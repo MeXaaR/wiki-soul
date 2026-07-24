@@ -1,8 +1,8 @@
 # Open Knowledge Format compatibility
 
-This document defines the boundary between the official **Open Knowledge Format (OKF) 0.1 — Draft** specification and conventions added by Simple Soul.
+This document defines the boundary between the official **Open Knowledge Format (OKF) 0.1 — Draft** specification and conventions added by Wiki Soul.
 
-It is based on [`okf/SPEC.md` on `main`](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md), as reviewed on July 23, 2026. OKF remains normative. If a conflict appears, Simple Soul must change or report the incompatibility; it must not silently redefine OKF.
+It is based on [`okf/SPEC.md` on `main`](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md), as reviewed on July 23, 2026. OKF remains normative. If a conflict appears, Wiki Soul must change or report the incompatibility; it must not silently redefine OKF.
 
 ## 1. Compatibility principle
 
@@ -27,7 +27,7 @@ OKF does not standardize:
 - identities or relationships across bundles;
 - locking, backup, or concurrent agent writes.
 
-Every behavior in the second list belongs to the Simple Soul protocol.
+Every behavior in the second list belongs to the Wiki Soul protocol.
 
 ## 2. Conformance units
 
@@ -35,8 +35,8 @@ Each global topic and each project is an autonomous OKF bundle.
 
 ```text
 ~/.agents/memory/
-├── index.md                         # Lightweight Simple Soul catalogue
-├── protocol.md                      # Local Simple Soul protocol
+├── index.md                         # Lightweight Wiki Soul catalogue
+├── protocol.md                      # Local Wiki Soul protocol
 ├── bundles/
 │   ├── stripe/                      # Autonomous OKF bundle
 │   │   ├── index.md
@@ -61,9 +61,9 @@ The OKF conformance units are:
 - every other direct child of `bundles/`;
 - every project directory under `projects/`.
 
-`~/.agents/memory/` is a Simple Soul container and catalogue. It is not presented as one Knowledge Bundle. This boundary lets topic and project bundles remain independently distributable, as intended by the official [Knowledge Bundle structure](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#3-bundle-structure).
+`~/.agents/memory/` is a Wiki Soul container and catalogue. It is not presented as one Knowledge Bundle. This boundary lets topic and project bundles remain independently distributable, as intended by the official [Knowledge Bundle structure](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#3-bundle-structure).
 
-The root `index.md` and `projects/index.md` are Simple Soul orchestration catalogues. Their syntax deliberately resembles an OKF index, but they sit outside the autonomous bundle boundaries. `protocol.md` is installation-managed; it may use concept-style frontmatter, but its presence does not turn the memory root into a bundle.
+The root `index.md` and `projects/index.md` are Wiki Soul orchestration catalogues. Their syntax deliberately resembles an OKF index, but they sit outside the autonomous bundle boundaries. `protocol.md` is installation-managed; it may use concept-style frontmatter, but its presence does not turn the memory root into a bundle.
 
 ## 3. Root catalogue and progressive disclosure
 
@@ -93,7 +93,7 @@ Example:
 - [Project catalogue](projects/) — Complete catalogue of project-specific memory bundles.
 ```
 
-Simple Soul adds no `Use when:` field or line. Routing relies on titles, descriptions, and natural-language terms. This convention supports the progressive-disclosure purpose of [OKF index files](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#6-index-files) without introducing a proprietary index dialect.
+Wiki Soul adds no `Use when:` field or line. Routing relies on titles, descriptions, and natural-language terms. This convention supports the progressive-disclosure purpose of [OKF index files](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#6-index-files) without introducing a proprietary index dialect.
 
 ## 4. Concept documents
 
@@ -126,7 +126,7 @@ timestamp: 2026-07-23T14:30:00Z
 
 ### Metadata
 
-| Field | OKF rule | Simple Soul convention |
+| Field | OKF rule | Wiki Soul convention |
 |---|---|---|
 | `type` | Required short string; no central taxonomy. | Choose a descriptive type. Do not impose a closed vocabulary. |
 | `title` | Optional and recommended. | Populate it to improve reading and routing. |
@@ -135,16 +135,16 @@ timestamp: 2026-07-23T14:30:00Z
 | `tags` | Optional YAML list of short strings. | No required vocabulary. Avoid unnecessary synonyms and variants. |
 | `timestamp` | Optional ISO 8601 datetime of the last meaningful change. | Update after every meaningful change. Use a complete datetime with `Z` or an explicit offset. |
 
-OKF permits producer-defined keys. Simple Soul requires none and does not add proprietary fields such as `source:` or `status:`. Generic consumers should preserve unknown fields when round-tripping, as described by the official [frontmatter rules](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#41-frontmatter). Simple Soul makes preservation mandatory for its own writers.
+OKF permits producer-defined keys. Wiki Soul requires none and does not add proprietary fields such as `source:` or `status:`. Generic consumers should preserve unknown fields when round-tripping, as described by the official [frontmatter rules](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#41-frontmatter). Wiki Soul makes preservation mandatory for its own writers.
 
-File and directory names follow a Simple Soul convention not required by OKF:
+File and directory names follow a Wiki Soul convention not required by OKF:
 
 - ASCII characters;
 - `kebab-case`;
 - stable names;
 - content written in the user’s natural language.
 
-One concept represents one coherent unit of knowledge. Simple Soul targets fewer than 200 lines or 8 KiB, but this is a soft threshold. Meaning determines whether a document should be split.
+One concept represents one coherent unit of knowledge. Wiki Soul targets fewer than 200 lines or 8 KiB, but this is a soft threshold. Meaning determines whether a document should be split.
 
 ## 5. Indexes and logs
 
@@ -167,7 +167,7 @@ okf_version: "0.1"
 
 This declaration is optional. It is the only place where OKF permits frontmatter in an index, according to [Versioning](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#11-versioning).
 
-Simple Soul updates an index when creating, deleting, merging, splitting, renaming, or changing the description of an indexed item. An internal correction to an existing concept does not require an index rewrite.
+Wiki Soul updates an index when creating, deleting, merging, splitting, renaming, or changing the description of an indexed item. An internal correction to an existing concept does not require an index rewrite.
 
 ### `log.md`
 
@@ -178,7 +178,7 @@ Simple Soul updates an index when creating, deleting, merging, splitting, renami
 - entries are free-form prose;
 - labels such as `Update`, `Creation`, or `Deprecation` are conventions, not normative values.
 
-Simple Soul reserves logs for significant changes. It does not log every write automatically. See the official [OKF log format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#7-log-files-optional).
+Wiki Soul reserves logs for significant changes. It does not log every write automatically. See the official [OKF log format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#7-log-files-optional).
 
 ## 6. Link protocol
 
@@ -196,7 +196,7 @@ Bundle-relative absolute links are preferred when a target should remain stable 
 
 ### General ban on inter-bundle links
 
-Simple Soul prohibits by convention:
+Wiki Soul prohibits by convention:
 
 - outbound links from one global bundle to another global bundle;
 - links from a global bundle to a project;
@@ -229,7 +229,7 @@ The project `index.md` links to that concept:
 - [Related global bundles](related-bundles.md) — Global knowledge bundles durably relevant to this project.
 ```
 
-Simple Soul rules:
+Wiki Soul rules:
 
 - a one-off consultation creates no relationship;
 - recurring use or a dependent project concept may add the relationship automatically;
@@ -243,8 +243,8 @@ OKF 0.1 defines no global bundle identifier, bundle registry, inter-bundle relat
 
 `../../bundles/stripe/index.md` is therefore:
 
-- a valid Markdown link inside the local Simple Soul installation;
-- a Simple Soul convention;
+- a valid Markdown link inside the local Wiki Soul installation;
+- a Wiki Soul convention;
 - non-portable when the project bundle is copied alone;
 - potentially treated as broken by a generic OKF consumer;
 - not interpretable as a standardized inter-bundle relationship.
@@ -253,7 +253,7 @@ This exception must never be presented as a native OKF capability. The requireme
 
 ## 7. Citations and provenance
 
-When a concept makes claims derived from durable external sources, Simple Soul follows the OKF convention:
+When a concept makes claims derived from durable external sources, Wiki Soul follows the OKF convention:
 
 ```markdown
 # Citations
@@ -263,7 +263,7 @@ When a concept makes claims derived from durable external sources, Simple Soul f
 
 The section appears at the bottom of the document. Citations may use absolute URLs, paths within the bundle, or local references represented as OKF concepts.
 
-Simple Soul adds these rules:
+Wiki Soul adds these rules:
 
 - never invent a citation;
 - cite durable documentation, pages, or sources supporting an external claim;
@@ -292,7 +292,7 @@ A conforming consumer must not reject a bundle because of:
 - a broken link;
 - a missing `index.md`.
 
-Simple Soul performs incremental validation after every write:
+Wiki Soul performs incremental validation after every write:
 
 - check only touched files and their index links;
 - reread a concept immediately before modifying it;
@@ -300,7 +300,7 @@ Simple Soul performs incremental validation after every write:
 - check for secrets and prohibited content;
 - repair immediately or restore the previous content on failure.
 
-A full audit occurs only during an explicit memory reorganization. This validation is a Simple Soul guarantee, not an OKF requirement.
+A full audit occurs only during an explicit memory reorganization. This validation is a Wiki Soul guarantee, not an OKF requirement.
 
 The complete normative list appears in [Conformance](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#9-conformance).
 
@@ -314,22 +314,22 @@ The complete normative list appears in [Conformance](https://github.com/GoogleCl
 | `index.md`, `log.md`, citations, and Markdown links | OKF |
 | Tolerance of unknown types, fields, and broken links | OKF |
 | Autonomous bundles as distribution units | OKF |
-| `~/.agents/memory/` root | Simple Soul |
-| Root catalogue and separate project catalogue | Simple Soul |
-| Global bundles organized by topic | Simple Soul |
-| Project bundles derived from Git identity | Simple Soul |
-| Rich descriptions without `Use when:` | Simple Soul, compatible with OKF |
-| Hook-based routing and progressive reading | Simple Soul |
-| Soft threshold of 200 lines or 8 KiB | Simple Soul |
-| Validation after every write | Simple Soul |
-| No proprietary `type` taxonomy | Simple Soul choice aligned with OKF |
-| `project → global bundle` link through `related-bundles.md` | Simple Soul exception, not standardized by OKF |
+| `~/.agents/memory/` root | Wiki Soul |
+| Root catalogue and separate project catalogue | Wiki Soul |
+| Global bundles organized by topic | Wiki Soul |
+| Project bundles derived from Git identity | Wiki Soul |
+| Rich descriptions without `Use when:` | Wiki Soul, compatible with OKF |
+| Hook-based routing and progressive reading | Wiki Soul |
+| Soft threshold of 200 lines or 8 KiB | Wiki Soul |
+| Validation after every write | Wiki Soul |
+| No proprietary `type` taxonomy | Wiki Soul choice aligned with OKF |
+| `project → global bundle` link through `related-bundles.md` | Wiki Soul exception, not standardized by OKF |
 
 ## 10. Known limits
 
 - OKF 0.1 remains a draft. Changes on `main` may change these conclusions.
 - A collection of bundles in one directory does not automatically make that directory a bundle.
-- Simple Soul catalogues outside bundles are not OKF conformance units.
+- Wiki Soul catalogues outside bundles are not OKF conformance units.
 - The project-to-global link exception depends on the local directory layout.
 - Exporting a project bundle alone can break its links to global bundles.
 - OKF supplies no validation, migration, search, injection, security, or concurrency mechanism.

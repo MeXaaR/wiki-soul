@@ -134,7 +134,7 @@ Verification:
 
 Status: [x]
 
-Value: Let Pi bootstrap, test, register, and reload its own Simple Soul
+Value: Let Pi bootstrap, test, register, and reload its own Wiki Soul
 integration without requiring a preinstalled hook framework.
 
 Acceptance criteria:

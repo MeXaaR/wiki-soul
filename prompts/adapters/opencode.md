@@ -89,8 +89,8 @@ At the time this adapter was written, OpenCode 1.18.4 exposed:
 
 Those versions also maintained a matching `@opencode-ai/plugin` development
 dependency in OpenCode config directories as host-owned runtime behavior.
-Simple Soul MUST NOT create a `package.json`, request that package, add another
-dependency, or represent OpenCode's own maintenance as a Simple Soul package
+Wiki Soul MUST NOT create a `package.json`, request that package, add another
+dependency, or represent OpenCode's own maintenance as a Wiki Soul package
 requirement.
 
 OpenCode 1.15.7 exposed the same required system-transform and local-path
@@ -112,7 +112,7 @@ Inspect:
 - global, custom-directory, project, and managed plugin inventories for
   collision detection;
 - `<home>/.agents/hooks/opencode/`;
-- the installed Simple Soul memory root and protocol;
+- the installed Wiki Soul memory root and protocol;
 - normal launch flags or wrappers that disable external plugins or rules.
 
 Modify only the selected user-global instruction file, one adapter-owned
@@ -148,7 +148,7 @@ Use `file` instruction mode. Select one safe surface:
    - place the exact managed block in that file;
    - add its exact absolute path to the global `instructions` array;
    - prove OpenCode combines it with the existing fallback.
-4. If a prior exact Simple Soul custom-instruction entry exists, reuse its
+4. If a prior exact Wiki Soul custom-instruction entry exists, reuse its
    owned file rather than creating another.
 
 Never edit, move, or remove a Claude fallback file merely to configure
@@ -201,11 +201,11 @@ Use `experimental.chat.system.transform` when the installed version proves its
 current contract. OpenCode reconstructs the system prompt for each model
 request, so the generated plugin MUST:
 
-1. Build one fresh bounded Simple Soul reference envelope for that request.
+1. Build one fresh bounded Wiki Soul reference envelope for that request.
 2. Mutate the existing array in place with `output.system.push(payload)`.
    Replacing `output.system` with another array is not sufficient when the host
    retains the original array reference.
-3. Add exactly one Simple Soul payload per model request.
+3. Add exactly one Wiki Soul payload per model request.
 4. Never append the payload to conversation messages, session storage, or
    plugin state.
 5. Never add it from tool, permission, shell, file, or generic event hooks.
@@ -279,7 +279,7 @@ For `memory-injection`, use adapter name `opencode` and hook ID
 Every generated source or launcher must carry:
 
 ```text
-SIMPLE_SOUL_GENERATED_HOOK_V1 adapter=opencode hook=memory-injection
+WIKI_SOUL_GENERATED_HOOK_V1 adapter=opencode hook=memory-injection
 ```
 
 Generate plain JavaScript unless the installed OpenCode runtime proves that a
@@ -293,7 +293,7 @@ The implementation must:
 - export one plugin function in the form required by the installed version;
 - avoid using the plugin `client`, shell helper, network, custom tools, auth,
   or event bus when they are unnecessary;
-- read only the authorized Simple Soul index files;
+- read only the authorized Wiki Soul index files;
 - remain read-only with respect to memory, projects, sessions, and OpenCode
   config;
 - use no dynamic import path derived from project or memory content;
@@ -319,7 +319,7 @@ Run every acceptance and security test in the common hook contract, plus:
    temporary local path without persistent registration.
 2. Capture a clean OpenCode startup baseline and prove the candidate causes no
    dependency or package change beyond OpenCode's own matching plugin-API
-   maintenance. Any additional Simple Soul-caused package, lockfile, or
+   maintenance. Any additional Wiki Soul-caused package, lockfile, or
    dependency delta fails the test.
 3. Prove the plugin mutates the supplied `system` array in place and preserves
    every prior entry.
@@ -330,7 +330,7 @@ Run every acceptance and security test in the common hook contract, plus:
 6. Prove separate parent and child session IDs cannot leak project or failure
    state between contexts.
 7. Prove initialization uses validated `worktree` or `directory` and never the
-   internal OpenCode project ID as the Simple Soul ID.
+   internal OpenCode project ID as the Wiki Soul ID.
 8. Prove a callback error, malformed hook input, missing optional session ID,
    unsupported model metadata, filesystem denial, and invalid Git metadata all
    resolve without rejecting the model request.
@@ -363,7 +363,7 @@ the candidate passes.
 Parse the selected user-global OpenCode JSON or JSONC file structurally. If no
 config exists, create the smallest canonical global config only after the
 production candidate passes. If multiple global alternatives are active,
-reuse the source containing a prior exact Simple Soul entry; otherwise choose
+reuse the source containing a prior exact Wiki Soul entry; otherwise choose
 the current documented canonical file and report the other active sources.
 
 For the `plugin` array:
@@ -371,7 +371,7 @@ For the `plugin` array:
 - preserve every unrelated key, comment when practical, plugin, option, and
   ordering;
 - add one exact absolute `file://` specifier for the immutable entrypoint;
-- replace an older exact marked Simple Soul revision in place;
+- replace an older exact marked Wiki Soul revision in place;
 - avoid duplicate paths, equivalent path aliases, and a simultaneous
   auto-discovered copy;
 - never replace the full array;

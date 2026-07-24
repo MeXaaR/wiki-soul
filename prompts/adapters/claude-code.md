@@ -183,9 +183,9 @@ adapter-specific copy of that block, and do not add files to client projects.
 
 Use these exact boundary markers:
 
-`<!-- SIMPLE_SOUL_START -->`
+`<!-- WIKI_SOUL_START -->`
 
-`<!-- SIMPLE_SOUL_END -->`
+`<!-- WIKI_SOUL_END -->`
 
 Claude Code strips block-level HTML comments before injecting `CLAUDE.md`, so
 the markers identify managed content without spending model context.
@@ -217,7 +217,7 @@ Before editing:
 1. Parse the existing file as JSON. If parsing fails, stop without rewriting it.
 2. Preserve every unrelated key, hook event, matcher group, handler, and array
    entry.
-3. Detect prior Simple Soul registrations by the exact managed script path.
+3. Detect prior Wiki Soul registrations by the exact managed script path.
 4. Detect a competing memory-injection hook. If its interaction cannot be
    proven safe, stop and report the conflict.
 5. Show the structural diff as part of the installer's single approved plan.
@@ -228,7 +228,7 @@ After the candidate passes tests:
 - use an absolute managed script path and the command form validated on this
   machine;
 - preserve existing handlers for every touched event;
-- update an existing exact Simple Soul registration in place;
+- update an existing exact Wiki Soul registration in place;
 - never add duplicate handlers;
 - never change `disableAllHooks`, managed policy, permissions, or unrelated
   settings to force activation.
@@ -302,13 +302,13 @@ only its exact managed registrations.
 
 Uninstall only the Claude Code integration:
 
-1. Remove the single valid block between `SIMPLE_SOUL_START` and
-   `SIMPLE_SOUL_END` from `<claude-config-root>/CLAUDE.md`.
+1. Remove the single valid block between `WIKI_SOUL_START` and
+   `WIKI_SOUL_END` from `<claude-config-root>/CLAUDE.md`.
 2. Remove only hook handlers whose command resolves to the exact managed path
    under `~/.agents/hooks/claude-code/` and whose target carries the matching
    ownership marker. A missing or unmarked target is an ownership conflict.
 3. Preserve an empty matcher group or event container when its ownership cannot
-   be proven; never infer ownership merely because Simple Soul removed its last
+   be proven; never infer ownership merely because Wiki Soul removed its last
    handler.
 4. Delete only unreferenced generated files carrying the matching ownership
    marker; remove no directory containing an unmarked or unrelated file.

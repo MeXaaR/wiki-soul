@@ -1,6 +1,6 @@
-# Uninstall Simple Soul Integrations
+# Uninstall Wiki Soul Integrations
 
-Remove Simple Soul integrations safely while preserving memory by default.
+Remove Wiki Soul integrations safely while preserving memory by default.
 
 ## Read Before Acting
 
@@ -12,18 +12,18 @@ Read:
 - every hook contract under `prompts/hooks/`.
 
 Inspect the current global agent configuration and generated assets. Do not
-assume paths beyond stable Simple Soul markers and registrations.
+assume paths beyond stable Wiki Soul markers and registrations.
 
 ## Default Scope
 
 Remove only:
 
-- the instruction block between `<!-- SIMPLE_SOUL_START -->` and
-  `<!-- SIMPLE_SOUL_END -->` when the adapter used file mode;
+- the instruction block between `<!-- WIKI_SOUL_START -->` and
+  `<!-- WIKI_SOUL_END -->` when the adapter used file mode;
 - native hook registrations whose command points to the current agent's
   exact content-addressed deployment under `~/.agents/hooks/<agent>/`;
 - generated text files that carry
-  `SIMPLE_SOUL_GENERATED_HOOK_V1 adapter=<agent> hook=<hook-id>` and are owned
+  `WIKI_SOUL_GENERATED_HOOK_V1 adapter=<agent> hook=<hook-id>` and are owned
   by those registrations.
 
 Preserve:
@@ -59,7 +59,7 @@ If ownership is ambiguous, stop instead of deleting.
    file. Never remove the whole agent hook directory merely because it is
    under `~/.agents/hooks/<agent>/`.
 5. Reparse edited JSON, TOML, or other native configuration.
-6. Confirm the agent starts without a Simple Soul hook error.
+6. Confirm the agent starts without a Wiki Soul hook error.
 7. Confirm `~/.agents/memory/index.md` remains intact.
 8. In injected instruction mode, confirm no Cursor User Rule or other
    unrelated instruction was removed.

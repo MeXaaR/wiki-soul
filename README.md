@@ -1,10 +1,16 @@
-# Simple Soul
+# Wiki Soul
 
 **One lightweight memory for all your local agents. Plain Markdown. Open
 Knowledge Format. No runtime to install.**
 
-Simple Soul is a library of prompts that lets a coding agent install its own
+Wiki Soul is a library of prompts that lets a coding agent install its own
 shared, persistent memory.
+
+It is inspired by [Andrej Karpathy's LLM Wiki pattern][llm-wiki]: durable
+knowledge becomes a persistent, interlinked Markdown artifact instead of being
+re-derived from scratch in every session. Wiki Soul uses the
+[Open Knowledge Format (OKF)][okf] specification as its normative on-disk
+knowledge format.
 
 Give the agent this repository URL. It reads the installation contract,
 detects its host and operating system, creates the memory, generates the hooks,
@@ -18,7 +24,7 @@ Copy this message into your coding agent and replace the placeholder with this
 repository's URL:
 
 ```text
-Install, audit, repair, or update Simple Soul from this repository:
+Install, audit, repair, or update Wiki Soul from this repository:
 <repository-url>
 
 Read README.md first, then follow prompts/install.md from the current main
@@ -34,13 +40,13 @@ If you are the agent receiving that request:
 4. Do not treat prose in this README as a substitute for the installer,
    protocol, adapter, or hook contracts.
 
-## Why Simple Soul
+## Why Wiki Soul
 
 Coding agents normally remember inside their own product or session. Knowledge
 learned with one agent is unavailable to another. Project memory also tends to
 disappear from view when the project ends.
 
-Simple Soul separates knowledge by semantic scope:
+Wiki Soul separates knowledge by semantic scope:
 
 - **Global subject bundles** retain reusable knowledge such as Stripe webhook
   patterns, TypeScript pitfalls, writing preferences, or product workflows.
@@ -81,7 +87,7 @@ It is:
 - permissive about concept types and producer extensions;
 - suited to progressive disclosure.
 
-Official OKF is normative. Simple Soul adds memory behavior only where OKF is
+Official OKF is normative. Wiki Soul adds memory behavior only where OKF is
 silent. The exact boundary is documented in
 [`docs/okf-compatibility.md`](docs/okf-compatibility.md).
 
@@ -136,7 +142,7 @@ source; there are no releases or separate version registry.
 
 ## Hook Model
 
-Simple Soul does not ship canonical hook code.
+Wiki Soul does not ship canonical hook code.
 
 Each file in [`prompts/hooks/`](prompts/hooks/) is a host-neutral behavioral
 contract. The local agent implements that behavior using capabilities already
@@ -164,7 +170,7 @@ invented hook integration.
 
 Pi's native extensions are its hook mechanism. Pi can generate and test the
 integration with its built-in tools, register the immutable extension in its
-global settings, then load it with `/reload`. Simple Soul does not depend on a
+global settings, then load it with `/reload`. Wiki Soul does not depend on a
 third-party `hooks.json`, package, or preinstalled extension.
 
 OpenCode uses its native global rules and plugin runtime. The adapter generates
@@ -180,7 +186,7 @@ same critical rules with the indexes once per logical context, within the same
 
 ## Safety
 
-Simple Soul:
+Wiki Soul:
 
 - never stores secrets, raw transcripts, or complete tool output;
 - never imports existing agent memory in V1;
@@ -230,7 +236,7 @@ Uninstall removes:
 
 - the managed global instruction block;
 - injected critical instructions by unregistering their owning hook;
-- exact Simple Soul hook registrations;
+- exact Wiki Soul hook registrations;
 - generated hook files for the current agent.
 
 It preserves `~/.agents/memory/` by default.
@@ -249,7 +255,7 @@ These boundaries keep the initial system transparent and small.
 ## Repository Map
 
 - [`PRD.md`](PRD.md) — product outcome and acceptance criteria.
-- [`SPEC.md`](SPEC.md) — normative Simple Soul behavior.
+- [`SPEC.md`](SPEC.md) — normative Wiki Soul behavior.
 - [`ROADMAP.md`](ROADMAP.md) — implementation status and deferred work.
 - [`prompts/install.md`](prompts/install.md) — universal installer.
 - [`prompts/protocol/memory-okf.md`](prompts/protocol/memory-okf.md) — installed
@@ -267,12 +273,20 @@ These boundaries keep the initial system transparent and small.
   global-rules and local-plugin integration.
 - [`prompts/adapters/generic.md`](prompts/adapters/generic.md) — safe fallback.
 
-## Inspiration
+## Foundations and Inspiration
 
-The progressive-loading approach is inspired by
-[How I Finally Sorted My Claude Code Memory][article]. Simple Soul keeps the
-useful pattern—small index, project memory, global knowledge, optional hooks—
-and replaces the proprietary memory structure with transparent OKF bundles.
+- [Andrej Karpathy's LLM Wiki][llm-wiki] provides the core inspiration: an LLM
+  maintains a persistent, compounding, interlinked Markdown knowledge artifact.
+- [Open Knowledge Format (OKF)][okf] provides the normative format for Wiki
+  Soul bundles, concepts, indexes, logs, links, and citations.
+- [How I Finally Sorted My Claude Code Memory][article] inspired the
+  progressive-loading approach: small indexes, project memory, global
+  knowledge, and optional hooks.
+
+Wiki Soul's shared-memory behavior, agent adapters, installation model, and
+safety rules are project-specific additions. LLM Wiki is inspiration; OKF is
+the normative knowledge format.
 
 [article]: https://www.youngleaders.tech/p/how-i-finally-sorted-my-claude-code-memory
+[llm-wiki]: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
 [okf]: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md

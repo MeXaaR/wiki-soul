@@ -1,4 +1,4 @@
-# Simple Soul Specification
+# Wiki Soul Specification
 
 Status: V1 design contract
 
@@ -6,9 +6,11 @@ Distribution channel: repository `main`
 
 Normative knowledge format: [Open Knowledge Format (OKF)][okf-spec]
 
+Design inspiration: [Andrej Karpathy's LLM Wiki pattern][llm-wiki]
+
 ## 1. Purpose
 
-Simple Soul installs one local memory that multiple coding agents can read and
+Wiki Soul installs one local memory that multiple coding agents can read and
 improve. It applies the progressive-disclosure pattern from structured agent
 memory systems to OKF:
 
@@ -19,7 +21,11 @@ memory systems to OKF:
 - let project memory route to reusable global knowledge;
 - avoid chat archives, databases, and opaque background services.
 
-Simple Soul is a prompt library. It does not ship a runtime implementation.
+The persistent, interlinked Markdown knowledge artifact is inspired by the LLM
+Wiki pattern. LLM Wiki is design inspiration, not a normative dependency. OKF
+remains authoritative for the stored knowledge format.
+
+Wiki Soul is a prompt library. It does not ship a runtime implementation.
 The installing agent creates local files and generates host-compatible hooks
 from behavioral contracts.
 
@@ -29,7 +35,7 @@ The words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** expres
 requirement strength.
 
 Official OKF is authoritative for knowledge-format conformance. Requirements in
-this document govern Simple Soul installation and behavior. When the two
+this document govern Wiki Soul installation and behavior. When the two
 conflict, the installer MUST stop and report the conflict rather than silently
 reinterpret OKF.
 
@@ -94,7 +100,7 @@ It contains durable knowledge that applies only to that repository or client
 context.
 
 A project bundle MAY link to global subject bundles only through its local
-`related-bundles.md` concept. This is a Simple Soul inter-bundle convention,
+`related-bundles.md` concept. This is a Wiki Soul inter-bundle convention,
 not an OKF-standard relationship type. The links are one-way and optional.
 
 Global bundles MUST NOT link back to projects.
@@ -122,7 +128,7 @@ Every non-reserved Markdown concept MUST:
 - contain a non-empty `type`;
 - preserve unknown frontmatter fields when edited.
 
-Each autonomous bundle MUST remain understandable without another Simple Soul
+Each autonomous bundle MUST remain understandable without another Wiki Soul
 bundle. It MUST NOT link to another global or project memory bundle except for
 the project-to-global convention in section 4.2. It MAY cite external sources
 and use an external `resource`.
@@ -288,7 +294,7 @@ A one-off lookup does not justify a persistent relationship.
 - Deprecation is optional and used only when transition or history remains
   useful.
 
-When deprecated, use the Simple Soul convention expressed with OKF-native
+When deprecated, use the Wiki Soul convention expressed with OKF-native
 primitives: a `deprecated` tag, an explanatory body section, and a link to the
 replacement when that link is allowed by the bundle-link rules. Generic OKF
 consumers may ignore the tag and its semantics.
@@ -365,8 +371,8 @@ The normal `file` mode installs a short, managed global instruction block
 delimited by:
 
 ```markdown
-<!-- SIMPLE_SOUL_START -->
-<!-- SIMPLE_SOUL_END -->
+<!-- WIKI_SOUL_START -->
+<!-- WIKI_SOUL_END -->
 ```
 
 The block contains only critical always-on behavior:
@@ -389,7 +395,7 @@ No project repository receives a copy of the protocol.
 A certified adapter MAY use `injected` mode only when the host has no safely
 editable local user-global instruction file. It renders the same canonical
 critical rules without HTML markers in one
-`SIMPLE SOUL OPERATING RULES V1` section immediately before the memory
+`WIKI SOUL OPERATING RULES V1` section immediately before the memory
 reference-data envelope.
 
 Injected mode:
@@ -564,4 +570,5 @@ confirmation and a clear irreversibility warning.
   and OpenCode.
 - Semantic or vector retrieval.
 
+[llm-wiki]: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
 [okf-spec]: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md

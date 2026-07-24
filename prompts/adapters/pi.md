@@ -17,7 +17,7 @@ can subscribe to lifecycle events, inject model-visible context, register tools
 and commands, and participate in session state.
 
 Do not assume that a separate hook framework, hook package, or `hooks.json`
-exists. None is required to bootstrap Simple Soul:
+exists. None is required to bootstrap Wiki Soul:
 
 1. Pi's built-in `read`, `write`, `edit`, and `bash` tools are sufficient to
    inspect the installed API and generate a candidate extension.
@@ -29,7 +29,7 @@ exists. None is required to bootstrap Simple Soul:
    new extension.
 
 Pi may therefore extend itself, but it MUST NOT edit Pi's installed package or
-mutate a loaded Simple Soul deployment in place. Every repair or update creates
+mutate a loaded Wiki Soul deployment in place. Every repair or update creates
 a new tested content-addressed revision, switches the registration, and reloads
 the runtime.
 
@@ -84,7 +84,7 @@ Before proposing changes:
 5. If a required capability is absent, use only a current documented
    equivalent that passes the common contract. Otherwise leave
    `memory-injection` unsupported. Do not upgrade Pi or install a third-party
-   hook framework as part of Simple Soul installation.
+   hook framework as part of Wiki Soul installation.
 
 At the time this adapter was written, Pi 0.80.10 exposed:
 
@@ -105,10 +105,10 @@ That version note is evidence, not a frozen schema.
 
 Choose the integration path from evidence:
 
-1. If a marked Simple Soul extension is already registered, audit that exact
+1. If a marked Wiki Soul extension is already registered, audit that exact
    revision against the current contracts. Leave it unchanged when conforming;
    otherwise stage a replacement revision.
-2. If no Simple Soul extension is registered but explicit `-e` loading and the
+2. If no Wiki Soul extension is registered but explicit `-e` loading and the
    required native lifecycle API exist, use the bootstrap sequence in this
    adapter. A missing hook framework is not a blocker.
 3. If another active memory extension injects equivalent indexes or operating
@@ -117,7 +117,7 @@ Choose the integration path from evidence:
 4. If only a third-party hook framework exposes relevant events, do not adopt
    it merely because it is installed. Use it only if the user explicitly
    chooses that dependency and the repository contract is updated to certify
-   it; ordinary Simple Soul installation remains package-free.
+   it; ordinary Wiki Soul installation remains package-free.
 5. If the installed Pi lacks a documented safe lifecycle or exact
    user-global extension registration, install only the memory core and global
    instructions, report automatic injection as unsupported, and name the
@@ -133,7 +133,7 @@ Inspect:
 - extension paths and packages enabled by user settings;
 - project-local extensions visible to the current trusted project, only for
   collision detection;
-- the installed Simple Soul memory root and protocol;
+- the installed Wiki Soul memory root and protocol;
 - generated assets under `<home>/.agents/hooks/pi/`;
 - available native runtimes and exact command semantics.
 
@@ -151,7 +151,7 @@ Do not read:
 - project files unrelated to identity or collision detection.
 
 A file such as `<home>/.pi/hooks.json` may belong to an optional third-party
-extension. It is not a Simple Soul registration surface unless the installed
+extension. It is not a Wiki Soul registration surface unless the installed
 Pi documentation and active extension inventory prove that it owns the exact
 required lifecycle. Never create, edit, or depend on that file merely because
 it exists.
@@ -219,7 +219,7 @@ that action.
 For every later repair or update:
 
 - generate and test a new revision;
-- replace only the exact old Simple Soul path in user settings;
+- replace only the exact old Wiki Soul path in user settings;
 - reload;
 - keep the old revision until the new one is live-verified;
 - never edit either revision in place.
@@ -228,7 +228,7 @@ For every later repair or update:
 
 Derive the smallest conforming mapping from the installed API. For current Pi
 versions, prefer a persistent custom message owned by a stable
-`customType`, such as `simple-soul-memory-injection-v1`.
+`customType`, such as `wiki-soul-memory-injection-v1`.
 
 The generated extension should:
 
@@ -246,7 +246,7 @@ The generated extension should:
    a new lifecycle context requires a fresh index snapshot.
 6. After compaction, append one fresh message after the compaction boundary.
 7. If fresh lifecycle injection leaves an older owned message visible in the
-   rebuilt context, use the `context` event only to remove older Simple Soul
+   rebuilt context, use the `context` event only to remove older Wiki Soul
    messages and keep the newest owned one. The `context` handler must not read
    files, rebuild payloads, inspect unrelated message contents, or inject a
    new message on ordinary tool turns.
@@ -276,7 +276,7 @@ file reads.
 Pi core intentionally does not prescribe one subagent implementation.
 
 - A child launched as a normal Pi process with user-global resources enabled
-  loads the global Simple Soul extension and receives its own session
+  loads the global Wiki Soul extension and receives its own session
   injection.
 - An installed third-party subagent extension or SDK integration may suppress
   global resources or construct an in-memory session differently.
@@ -311,7 +311,7 @@ For `memory-injection`, use the stable adapter name `pi` and hook ID
 Every generated source or launcher must carry:
 
 ```text
-SIMPLE_SOUL_GENERATED_HOOK_V1 adapter=pi hook=memory-injection
+WIKI_SOUL_GENERATED_HOOK_V1 adapter=pi hook=memory-injection
 ```
 
 The implementation must:
@@ -323,7 +323,7 @@ The implementation must:
 - use no dynamic command evaluation;
 - never read a session file, prompt, tool result, credential, or existing
   memory product;
-- read only the authorized Simple Soul index files;
+- read only the authorized Wiki Soul index files;
 - use `display: false` or the current documented equivalent so reference data
   does not masquerade as a user-authored message in the UI;
 - avoid triggering a model turn when appending lifecycle context;
@@ -342,7 +342,7 @@ Run every acceptance and security test in the common hook contract, plus:
    `systemPromptOptions.contextFiles` and the effective system prompt.
 4. Prove initial, new, resume, fork, reload, compaction, and tree-navigation
    paths that the installed version exposes.
-5. Prove the first model context contains one complete Simple Soul envelope.
+5. Prove the first model context contains one complete Wiki Soul envelope.
 6. Prove multiple prompts and multi-tool turns do not append or expose
    duplicate envelopes.
 7. Prove compaction creates one fresh post-compaction envelope and hides or
@@ -377,11 +377,11 @@ Use the documented `extensions` array:
 
 - preserve every unrelated setting, package, extension path, exclusion, and
   ordering when practical;
-- add one exact absolute path to the content-addressed Simple Soul entrypoint;
-- replace an older exact marked Simple Soul revision in place;
+- add one exact absolute path to the content-addressed Wiki Soul entrypoint;
+- replace an older exact marked Wiki Soul revision in place;
 - avoid duplicates and equivalent path aliases;
 - do not copy the implementation into Pi's auto-discovery directory;
-- do not add Simple Soul as a Pi package;
+- do not add Wiki Soul as a Pi package;
 - do not edit project `.pi/settings.json`;
 - do not edit a third-party `hooks.json`.
 
@@ -443,7 +443,7 @@ retiring the old revision.
 Uninstall this adapter by:
 
 1. removing only the exact user-global `extensions` entry targeting a marked
-   Simple Soul deployment under `<home>/.agents/hooks/pi/`;
+   Wiki Soul deployment under `<home>/.agents/hooks/pi/`;
 2. removing only the managed global instruction block;
 3. reloading or restarting Pi;
 4. deleting only unreferenced marked generated files, and no directory

@@ -1,6 +1,6 @@
-# Reorganize Simple Soul Memory
+# Reorganize Wiki Soul Memory
 
-Use this prompt to maintain an installed Simple Soul memory. Follow the local
+Use this prompt to maintain an installed Wiki Soul memory. Follow the local
 `~/.agents/memory/protocol.md` before acting.
 
 ## Determine Scope

@@ -1,4 +1,4 @@
-# Install, Audit, Repair, or Update Simple Soul
+# Install, Audit, Repair, or Update Wiki Soul
 
 You are the local agent responsible for this complete operation.
 
@@ -45,12 +45,12 @@ Determine without modifying:
 - active user-global hook configuration surfaces;
 - available local runtimes and shells;
 - administrative or managed-policy restrictions;
-- existing Simple Soul markers, registrations, and generated assets;
+- existing Wiki Soul markers, registrations, and generated assets;
 - competing memory instructions or injection hooks;
 - the caller's repository root and Git remote, captured before fetching or
-  opening a temporary Simple Soul checkout.
+  opening a temporary Wiki Soul checkout.
 
-The Simple Soul source checkout or temporary fetch location MUST NOT become the
+The Wiki Soul source checkout or temporary fetch location MUST NOT become the
 current project identity. Keep the caller's captured root through the whole
 operation.
 
@@ -247,8 +247,8 @@ The adapter chooses one instruction mode:
 For `file` mode, install exactly one managed block:
 
 ```markdown
-<!-- SIMPLE_SOUL_START -->
-## Simple Soul memory
+<!-- WIKI_SOUL_START -->
+## Wiki Soul memory
 
 - Shared memory lives at `<absolute-memory-root>`; use the injected global and project indexes for routing.
 - Read only relevant bundle indexes and concepts; never load all memory by default.
@@ -260,7 +260,7 @@ For `file` mode, install exactly one managed block:
 - Re-read before editing and validate every touched memory file after writing.
 - Follow official OKF; preserve unknown fields and use citations for durable external claims.
 - V1 has no write lock: only one agent may write memory at a time.
-<!-- SIMPLE_SOUL_END -->
+<!-- WIKI_SOUL_END -->
 ```
 
 Replace placeholders with resolved native absolute paths. Do not leave `~` or a
@@ -278,7 +278,7 @@ Rules:
 For `injected` mode:
 
 - use the same heading and bullet content without the HTML boundary comments;
-- wrap it in one `SIMPLE SOUL OPERATING RULES V1` section;
+- wrap it in one `WIKI SOUL OPERATING RULES V1` section;
 - let the certified adapter define the exact lifecycle fields;
 - place it once before the hook contract's untrusted reference-data envelope;
 - keep the complete model-visible output within 6,000 UTF-8 bytes;
@@ -303,7 +303,7 @@ For each direct `hooks/*.md` file:
    the first 512 UTF-8 bytes of every generated source or launcher:
 
    ```text
-   SIMPLE_SOUL_GENERATED_HOOK_V1 adapter=<agent> hook=<hook-id>
+   WIKI_SOUL_GENERATED_HOOK_V1 adapter=<agent> hook=<hook-id>
    ```
 
    Generated implementations MUST be inspectable text, not opaque binaries.

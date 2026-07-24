@@ -1,6 +1,6 @@
 # Adding a Hook Contract
 
-Simple Soul discovers hooks from Markdown files under `prompts/hooks/`. There is
+Wiki Soul discovers hooks from Markdown files under `prompts/hooks/`. There is
 no manifest and no canonical hook source code.
 
 Adding one hook should require one new Markdown contract.

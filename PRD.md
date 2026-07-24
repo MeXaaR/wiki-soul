@@ -2,10 +2,13 @@
 
 ## Goal
 
-Simple Soul is a repository of installation prompts that gives local coding
-agents one lightweight, shared, persistent memory in Open Knowledge Format
-(OKF). A user gives an agent the repository URL, reviews one installation
-plan, and lets the agent create, configure, test, and verify the system.
+Wiki Soul is a repository of installation prompts that gives local coding
+agents one lightweight, shared, persistent memory in
+[Open Knowledge Format (OKF)][okf]. Its persistent, interlinked Markdown
+knowledge model is inspired by
+[Andrej Karpathy's LLM Wiki pattern][llm-wiki]. A user gives an agent the
+repository URL, reviews one installation plan, and lets the agent create,
+configure, test, and verify the system.
 
 The installed system must work without a package, daemon, database, hosted
 service, or network access.
@@ -92,7 +95,7 @@ service, or network access.
 
 - Repository contents are Markdown-first; hook implementations are generated
   locally.
-- Official OKF is normative. Simple Soul conventions must remain compatible
+- Official OKF is normative. Wiki Soul conventions must remain compatible
   and must be labeled as conventions.
 - Hook code is local, read-only, bounded, offline, and least-privilege.
 - Runtime injection contains only critical operating rules when the adapter
@@ -121,7 +124,7 @@ service, or network access.
 - [x] Claude Code, Codex, Cursor, Pi, and OpenCode have separate, current adapter
       instructions.
 - [x] Every autonomous bundle created by a fresh install conforms to OKF 0.1;
-      root catalogues follow the documented Simple Soul catalogue rules.
+      root catalogues follow the documented Wiki Soul catalogue rules.
 - [x] Re-running installation creates no duplicate managed blocks or hooks.
 - [x] A hook cannot be registered until its isolated tests pass.
 - [x] Reports distinguish `generated`, `registered`, and `live-verified`.
@@ -141,3 +144,6 @@ service, or network access.
 
 - None blocking V1. Additional adapters, ingestion, backup, and concurrency are
   explicitly deferred.
+
+[llm-wiki]: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
+[okf]: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md

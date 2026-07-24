@@ -13,7 +13,7 @@ administrative restriction that changes the requested outcome.
 
 1. Treat the official OKF specification as authoritative for memory format.
 2. Treat the local memory protocol installed by the main prompt as
-   authoritative for Simple Soul behavior.
+   authoritative for Wiki Soul behavior.
 3. Treat current official Codex documentation and the installed Codex version
    as authoritative for Codex integration.
 4. Read every Markdown contract in `../hooks/`. Install each hook independently.
@@ -44,7 +44,7 @@ Before proposing changes:
      managed sources, including other memory hooks;
    - the target directory `~/.agents/hooks/codex/` (or its native equivalent).
 4. Codex loads `AGENTS.override.md` instead of `AGENTS.md` at global scope when
-   the override is non-empty. Audit both files for Simple Soul markers, then
+   the override is non-empty. Audit both files for Wiki Soul markers, then
    maintain exactly one block across the pair in the file Codex actually loads:
    - use the existing non-empty `AGENTS.override.md` when active;
    - otherwise use the existing `AGENTS.md`;
@@ -122,7 +122,7 @@ For every `../hooks/*.md` file:
    available runtime.
 4. Generate it in a new temporary candidate directory outside memory. Preserve
    a prior working implementation until the candidate passes.
-5. Add the required Simple Soul ownership marker, compute the deployment digest
+5. Add the required Wiki Soul ownership marker, compute the deployment digest
    defined by the main installer, and after all isolated tests pass promote it
    to `~/.agents/hooks/codex/<hook-id>/revisions/<digest>/`. Test it once from
    that production path and never modify that revision in place.
@@ -257,7 +257,7 @@ Also verify the instruction block is actually loaded, not merely present:
 2. ensure the complete managed block falls inside the loaded global file
    budget;
 3. start a fresh Codex context and use the official instruction-summary or
-   equivalent diagnostic to prove the Simple Soul rules are loaded;
+   equivalent diagnostic to prove the Wiki Soul rules are loaded;
 4. report `installed` separately from `live-loaded`, and keep the overall
    status `partial` until loading is proven.
 
@@ -311,14 +311,14 @@ Uninstall only Codex integration:
 
 1. inspect both global `AGENTS.override.md` and `AGENTS.md`, then remove every
    unambiguous exact
-   `<!-- SIMPLE_SOUL_START -->` … `<!-- SIMPLE_SOUL_END -->` block from the
+   `<!-- WIKI_SOUL_START -->` … `<!-- WIKI_SOUL_END -->` block from the
    pair; stop if either file has damaged, duplicate, or overlapping markers;
 2. structurally remove only hook handlers whose exact generated paths belong
    to `~/.agents/hooks/codex/` and whose targets carry the matching ownership
    marker; treat a missing or unmarked target as an ownership conflict;
 3. preserve surrounding matcher groups when they still contain other handlers;
 4. preserve an empty matcher group when its ownership cannot be proven; never
-   infer ownership merely because Simple Soul removed its last handler;
+   infer ownership merely because Wiki Soul removed its last handler;
 5. delete only unreferenced generated files carrying the matching ownership
    marker under `~/.agents/hooks/codex/`; remove no directory that contains an
    unmarked or unrelated file;

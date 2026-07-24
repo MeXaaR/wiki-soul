@@ -4,7 +4,7 @@ Use this adapter only when no certified host adapter exists.
 
 ## Goal
 
-Install the Simple Soul memory core and short global instructions without
+Install the Wiki Soul memory core and short global instructions without
 inventing an unsupported automatic hook integration.
 
 ## Discovery
