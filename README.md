@@ -20,12 +20,11 @@ The installed memory then works locally and offline.
 
 ## Install
 
-Copy this message into your coding agent and replace the placeholder with this
-repository's URL:
+Copy this message into your coding agent:
 
 ```text
 Install, audit, repair, or update Wiki Soul from this repository:
-<repository-url>
+https://github.com/MeXaaR/wiki-soul
 
 Read README.md first, then follow prompts/install.md from the current main
 branch. Show me the single consolidated plan required by the installer, then
