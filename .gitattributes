@@ -1,0 +1,4 @@
+# Preserve vendored upstream bytes while excluding its existing trailing spaces
+# from repository whitespace checks.
+vendor/okf/0.2/SPEC.md text eol=lf whitespace=-trailing-space
+vendor/okf/LICENSE.md text eol=lf

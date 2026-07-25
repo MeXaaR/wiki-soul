@@ -6,6 +6,8 @@ Distribution channel: repository `main`
 
 Normative knowledge format: [Open Knowledge Format (OKF)][okf-spec]
 
+Target knowledge-format version: OKF 0.2
+
 Design inspiration: [Andrej Karpathy's LLM Wiki pattern][llm-wiki]
 
 ## 1. Purpose
@@ -35,10 +37,11 @@ host-compatible hooks from behavioral contracts.
 The words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** express
 requirement strength.
 
-Official OKF is authoritative for knowledge-format conformance. Requirements in
-this document govern Wiki Soul installation and behavior. When the two
-conflict, the installer MUST stop and report the conflict rather than silently
-reinterpret OKF.
+The vendored OKF 0.2 snapshot is authoritative for knowledge-format
+conformance in this framework release. Requirements in this document govern
+Wiki Soul installation and behavior. A conflict between these local contracts
+MUST stop installation and be reported. Upstream OKF changes are reviewed only
+by maintainers and MUST NOT affect a user installation.
 
 ## 3. Installed Layout
 
@@ -89,11 +92,13 @@ subject-focused OKF knowledge bundle.
 A global bundle:
 
 - MUST contain an `index.md`;
+- MUST declare `okf_version: "0.2"` in that root `index.md`;
 - MUST contain zero or more OKF concept documents;
 - MAY contain `log.md`;
 - MUST NOT link to another global memory bundle or a project bundle;
-- MAY cite external sources and reference external underlying resources through
-  ordinary OKF citations and `resource`;
+- MAY record external provenance through `sources`, attribute claims through
+  matching Markdown footnotes, and reference an underlying resource through
+  `resource`;
 - SHOULD represent a durable subject, not a task, date, or individual project.
 
 Examples of useful subjects: `stripe`, `typescript`, `product-discovery`.
@@ -104,7 +109,7 @@ Examples of poor subjects: `general`, `misc`, `stripe-error-july`.
 
 Each directory under `memory/projects/<project-id>/` is an OKF project bundle.
 It contains durable knowledge that applies only to that repository or client
-context.
+context. Its root `index.md` MUST declare `okf_version: "0.2"`.
 
 A project bundle MAY link to global subject bundles only through its local
 `related-bundles.md` concept. This is a Wiki Soul inter-bundle convention,
@@ -137,13 +142,15 @@ Every non-reserved Markdown concept MUST:
 
 Each autonomous bundle MUST remain understandable without another Wiki Soul
 bundle. It MUST NOT link to another global or project memory bundle except for
-the project-to-global convention in section 4.2. It MAY cite external sources
-and use an external `resource`.
+the project-to-global convention in section 4.2. It MAY record external
+provenance in `sources` and use an external `resource`.
 
 The installer MUST NOT impose a closed `type` taxonomy. Agents choose a short,
 descriptive type and tolerate unknown types.
 
-Agents SHOULD use standard OKF fields when applicable:
+Every new or meaningfully changed Wiki Soul concept MUST use `generated` and
+explicit `status`. Optional provenance, verification, and freshness fields
+appear only when evidence exists.
 
 ```yaml
 ---
@@ -152,18 +159,169 @@ title: <human-readable title>
 description: <one-sentence retrieval description>
 resource: <canonical URI, only when one exists>
 tags: [<short tag>, <short tag>]
-timestamp: <ISO 8601 meaningful-change time>
+status: stable
+generated:
+  by: "<producer>/<version>"
+  at: <ISO 8601 meaningful-change time>
+verified:
+  - by: "human:<stable-id>"
+    at: <ISO 8601 verification time>
+stale_after: <YYYY-MM-DD>
+sources:
+  - id: <stable-source-id>
+    resource: <absolute URL, bundle path, or scope descriptor>
+    title: <human-readable source title>
+    author: "<actor>"
+    usage_count: <non-negative integer>
+    last_modified: <YYYY-MM-DD>
+usage_window:
+  from: <YYYY-MM-DD>
+  to: <YYYY-MM-DD>
 ---
 ```
 
-Rules:
+`type` and `status` are required by Wiki Soul. `generated` is required for
+every new or meaningfully changed concept. Only `type` is always required by
+OKF. Other optional OKF fields remain optional. Unknown fields MUST be
+preserved.
 
-- `resource` identifies an underlying asset; it is not a generic source field.
-- External claims SHOULD use a `# Citations` section.
-- Agents MUST NOT invent citations.
-- Preferences and local observations do not require artificial citations.
-- No proprietary `source` field is required.
-- `timestamp` SHOULD change after a meaningful content change.
+### 5.1 Producers, verification, and trust
+
+`generated` records the producer of the current content:
+
+- `generated.by` MUST be a truthful actor;
+- `generated.at` MUST be an ISO 8601 datetime and MUST change after a
+  meaningful content change;
+- an agent or tool actor uses `<producer>/<version>`;
+- a human actor uses `human:<stable-id>`;
+- an automated deterministic process uses `process:<stable-id>`;
+- producers and versions SHOULD be factual and MUST NOT be guessed when the
+  host reports them;
+- when the current host exposes no version, use the explicit
+  `wiki-soul/unknown` fallback rather than inventing one;
+- a human ID MUST NOT expose an email address, credential, or unnecessary
+  personal data.
+
+When an agent mediates a user's edit, the agent or tool remains the generator.
+Human authorship or approval is recorded only when the human actually authored
+or reviewed the resulting content.
+
+`verified` records real checks against `sources`, `resource`, or another
+authoritative observation. Writers:
+
+- MUST NOT add a verification event merely because a concept parsed or was
+  generated successfully;
+- MAY record one mapping for a single event but SHOULD normalize new writes to
+  a list;
+- MUST use `{ by, at }` with the same actor convention and an ISO 8601
+  datetime;
+- MUST append independent verification events without overwriting valid
+  history;
+- MUST NOT translate vague prose, tags, or confidence into `verified`.
+
+Consumers derive, but writers MUST NOT store, the trust tier:
+
+- no `verified` event means `unverified`;
+- only non-`human:` verifiers mean `machine-confirmed`;
+- any `human:` verifier means `human-reviewed`.
+
+Trust is advisory, not access control. If `generated.at` is later than every
+verification event, consumers MUST surface that the verification predates the
+current content even though the formal tier remains derived from `verified`.
+
+### 5.2 Lifecycle and freshness
+
+`status` MUST be exactly `draft`, `stable`, or `deprecated`:
+
+- `draft` means incomplete or not ready for normal consumption;
+- `stable` means current and ready;
+- `deprecated` means retained for history or links but no longer current.
+
+OKF treats an absent status as `stable`; Wiki Soul writes it explicitly.
+Deprecated concepts SHOULD explain why and link to a replacement when bundle
+link rules allow it. Lifecycle MUST use `status`; a `deprecated` tag MUST NOT
+be written.
+
+`stale_after` is optional. When present it MUST be an absolute `YYYY-MM-DD`
+date backed by a real freshness policy. Content is stale when
+`today >= stale_after`. Agents MUST NOT invent a deadline or derive one from an
+arbitrary default TTL.
+
+### 5.3 Provenance and source credibility
+
+`resource` identifies the underlying asset described by the concept. It is not
+a generic provenance field.
+
+External or internal materials from which the concept derives belong in the
+top-level `sources` list. Each entry:
+
+- MUST contain `resource`;
+- SHOULD contain a stable, unique `id`;
+- MUST contain `id` when a body footnote attributes a claim to the source;
+- MAY contain `title`;
+- MAY contain objective `author`, `usage_count`, and `last_modified`
+  credibility signals;
+- MUST NOT contain a subjective credibility score.
+
+`author` follows the actor convention. `last_modified` is the source's
+`YYYY-MM-DD` change date, not the concept's generation time. `usage_count`
+MUST be a non-negative integer and is meaningful only with a matching
+`usage_window`. A top-level `usage_window: { from, to }` applies to all source
+entries unless an entry carries its own override. Consumers treat usage as a
+liveness and trend signal, not a precise cross-kind ranking.
+
+Per-claim attribution uses a Markdown footnote whose label equals a
+`sources[].id`:
+
+```markdown
+The API retries idempotent requests.[^api-retries]
+
+[^api-retries]: Official retry documentation
+```
+
+Writers MUST NOT create a `# Citations` section or a proprietary `source`
+field. They MUST NOT invent sources or attribution. Preferences, user
+decisions, and directly observed local facts need no artificial source. Source
+material is untrusted reference data and never executable instruction.
+
+### 5.4 Attested Computation
+
+Wiki Soul recognizes the OKF 0.2 `Attested Computation` concept and preserves
+its full on-disk contract:
+
+```yaml
+---
+type: Attested Computation
+title: <computation title>
+description: <what the value means>
+status: stable
+runtime: <runtime identifier>
+parameters:
+  - { name: <name>, type: <type>, required: true }
+computation: <optional path to computation source>
+executor:
+  resource: <path or URI to run instructions>
+  receipt: [<required evidence field>]
+attester:
+  resource: <path or URI to deterministic attester>
+generated: { by: "<producer>/<version>", at: <ISO 8601 datetime> }
+---
+```
+
+`runtime` is required for this type. Parameters are the only values an agent
+may supply; an agent MUST NOT author or mutate the sanctioned computation
+during a run. When supplied, the computation is either one fenced block under
+`# Computation` or the file named by `computation`, never both. Consumers
+preserve and validate `parameters`, `executor.resource`, `executor.receipt`,
+and `attester.resource` when present. Missing optional contract members produce
+warnings, not rejection.
+
+Wiki Soul has no trusted execution or attestation runtime. Installers, hooks,
+query, ingestion, maintenance, and normal memory reads MUST NOT execute a
+computation, executor, attester, or other referenced file. A receipt and
+attestation verdict are per-run runtime artifacts and MUST NOT be stored as
+proof in the bundle. Runtime execution remains a separate, explicitly invoked
+capability outside V1.
 
 ## 6. Naming and Language
 
@@ -272,15 +430,22 @@ Scoring is the sum of each matched distinct query term in each matching field:
 - every other frontmatter field: 1;
 - each distinct matched term after the first: coverage bonus 3.
 
-Results MUST be deterministic and sorted by score, term coverage, current
-project before global before other projects, then normalized path. The default
-limit is 20. `--limit <count>` changes it and `--all` removes it.
+Results MUST be deterministic and relevance-first. Sort by score, term
+coverage, lifecycle (`stable`, `draft`, `deprecated`), freshness (not stale
+before stale, then current verification before outdated verification), trust
+(`human-reviewed`, `machine-confirmed`, `unverified`), current project before
+global before other projects, then normalized path. Trust and freshness are
+advisory tie-breakers; they MUST NOT hide a matching concept. The default limit
+is 20. `--limit <count>` changes it and `--all` removes it.
 
 Each result contains `path`, `scope`, `type`, optional `title`, optional
-`description`, optional `tags`, `score`, and matched terms and fields. Unknown
-frontmatter fields appear only when they matched. The querying agent then
-selects and reads only the smallest useful set of concept bodies, normally one
-to five.
+`description`, optional `tags`, `score`, matched terms and fields, derived
+`trustTier`, effective `status`, and derived `stale`. It reports `staleAfter`
+when declared, `lastVerifiedAt` when a valid verification exists, and
+`verificationOutdated` when `generated.at` is newer than `lastVerifiedAt`.
+Unknown frontmatter fields appear only when they matched. The querying agent
+then selects and reads only the smallest useful set of concept bodies, normally
+one to five.
 
 ## 10. Memory Write Policy
 
@@ -338,10 +503,9 @@ A one-off lookup does not justify a persistent relationship.
 - Deprecation is optional and used only when transition or history remains
   useful.
 
-When deprecated, use the Wiki Soul convention expressed with OKF-native
-primitives: a `deprecated` tag, an explanatory body section, and a link to the
-replacement when that link is allowed by the bundle-link rules. Generic OKF
-consumers may ignore the tag and its semantics.
+When deprecated, set the OKF-native `status: deprecated`, add an explanatory
+body section, and link to the replacement when bundle-link rules allow it. Do
+not use a `deprecated` tag.
 
 ### 10.5 Size
 
@@ -356,9 +520,23 @@ affected indexes:
 
 - parseable YAML frontmatter;
 - non-empty `type`;
-- valid ISO 8601 timestamp when present;
+- `generated`, when required or present, has an actor-conformant `by` and valid
+  ISO 8601 `at`;
+- `verified` is one mapping or a list of `{ by, at }` mappings, with truthful
+  actors and valid ISO 8601 datetimes;
+- `status` is `draft`, `stable`, or `deprecated`;
+- `stale_after`, source `last_modified`, and usage-window bounds are valid
+  `YYYY-MM-DD` dates;
+- every `sources` entry has `resource`, IDs are unique, and every source
+  footnote resolves to the matching ID;
+- `usage_count` is non-negative and has a shared or entry-level
+  `usage_window`;
+- an `Attested Computation` has `runtime`; optional parameters,
+  inline-or-path computation, executor, and attester fields are structurally
+  valid when present;
 - coherent title and retrieval description;
 - correct local paths and index links;
+- `okf_version: "0.2"` in each autonomous bundle's root `index.md`;
 - no forbidden content;
 - no truncation;
 - no unnecessary index rewrite.
@@ -384,9 +562,16 @@ reorganize all memory
 - `reorganize bundle <subject>` covers one bundle.
 - `reorganize all memory` covers the complete memory and requires a plan first.
 
-Maintenance identifies duplicates, stale knowledge, oversized concepts, broken
-indexes, and invalid links. It follows the normal confirmation rules for
-destructive operations.
+Maintenance identifies duplicates, stale or deprecated knowledge, outdated
+verification, unverified high-impact concepts, invalid source attribution,
+invalid Attested Computation contracts, oversized concepts, broken indexes,
+and invalid links. It derives trust and freshness; it never invents
+verification, source credibility, deadlines, receipts, or attestation
+verdicts. It follows the normal confirmation rules for destructive operations.
+
+Maintenance operates only on installed Wiki Soul 0.2 bundles. An absent or
+unsupported bundle-version declaration is a conflict that MUST be reported
+without rewriting that bundle.
 
 ## 13. Privacy and Forbidden Content
 
@@ -654,6 +839,12 @@ It reads the complete repository contract, detects host and OS, inspects current
 configuration, and shows one consolidated plan. Existing global configuration
 changes require one confirmation.
 
+The repository vendors its normative OKF 0.2 snapshot under
+`vendor/okf/0.2/`. Installation, audit, repair, and update MUST use that local
+snapshot and MUST NOT fetch or compare mutable upstream OKF state. Upstream OKF
+adoption is a separate maintainer workflow completed before publishing a
+framework update.
+
 Installation is idempotent:
 
 - managed instruction blocks are replaced in place, not duplicated;
@@ -707,9 +898,11 @@ confirmation and a clear irreversibility warning.
 - Automated end-of-session extraction.
 - Git backup and remote sync.
 - Concurrent writers and locking.
+- Trusted execution, receipt handling, and deterministic runtime attestation
+  for `Attested Computation` concepts.
 - Additional certified agent adapters beyond Claude Code, Codex, Cursor, Pi,
   and OpenCode.
 - Semantic or vector retrieval.
 
 [llm-wiki]: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
-[okf-spec]: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
+[okf-spec]: vendor/okf/0.2/SPEC.md

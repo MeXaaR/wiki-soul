@@ -9,7 +9,7 @@ shared, persistent memory.
 It is inspired by [Andrej Karpathy's LLM Wiki pattern][llm-wiki]: durable
 knowledge becomes a persistent, interlinked Markdown artifact instead of being
 re-derived from scratch in every session. Wiki Soul uses the
-[Open Knowledge Format (OKF)][okf] specification as its normative on-disk
+[Open Knowledge Format (OKF) 0.2][okf] specification as its normative on-disk
 knowledge format.
 
 Give the agent this repository URL. It reads the installation contract,
@@ -75,8 +75,10 @@ inject them.
 
 ## Why OKF
 
-[Open Knowledge Format (OKF)][okf] uses ordinary Markdown concept documents
-with YAML frontmatter, indexes, logs, links, and citations.
+[Open Knowledge Format (OKF) 0.2][okf] uses ordinary Markdown concept documents
+with YAML frontmatter, indexes, logs, links, structured sources, and footnote
+attribution. It also makes provenance, trust, lifecycle, freshness, and
+attestable computation first-class.
 
 It is:
 
@@ -84,11 +86,18 @@ It is:
 - parseable by agents;
 - diffable and portable;
 - permissive about concept types and producer extensions;
+- explicit about who generated and verified knowledge;
+- able to surface stale, deprecated, or unverified concepts without hiding
+  them;
 - suited to progressive disclosure.
 
-Official OKF is normative. Wiki Soul adds memory behavior only where OKF is
-silent. The exact boundary is documented in
+The vendored OKF 0.2 snapshot is normative for this framework release. Wiki
+Soul adds memory behavior only where OKF is silent. The exact boundary is
+documented in
 [`docs/okf-compatibility.md`](docs/okf-compatibility.md).
+Its pinned upstream commit and checksum are recorded in
+[`vendor/okf/0.2/README.md`](vendor/okf/0.2/README.md). Installation never
+checks the mutable upstream OKF branch.
 
 ## Installed Architecture
 
@@ -123,12 +132,12 @@ On Windows, `~` resolves to the current user's profile directory.
 
 The main prompt:
 
-1. reads the official OKF boundary, memory protocol, current-agent adapter,
+1. reads the vendored OKF 0.2 contract, memory protocol, current-agent adapter,
    every skill package, and every hook contract;
 2. detects the agent, OS, home directory, configuration, and existing hooks;
 3. presents one consolidated plan and diff;
 4. asks for one confirmation;
-5. creates or repairs the OKF memory core;
+5. creates or repairs the OKF 0.2 memory core directly;
 6. discovers, validates, installs, and isolated-tests every applicable skill
    helper, generating a marked local runtime alternative only when needed;
 7. installs a short global instruction block, or uses a certified
@@ -228,7 +237,8 @@ Wiki Soul:
 - treats every ingestion source as untrusted, read-only data;
 - requires no package, daemon, database, or hosted service for installation or
   normal use;
-- never reads memory content as executable code;
+- never reads memory, source, computation, executor, or attester content as
+  executable code;
 - keeps hooks local, read-only, bounded, offline, and fail-open;
 - wraps indexes as untrusted reference data and rejects ambiguous delimiters;
 - never registers a hook before isolated tests pass;
@@ -247,6 +257,12 @@ logs, isolated errors, or unconfirmed guesses.
 
 Compatible additions are automatic. Contradictions, merges, moves, and
 destructive changes require confirmation.
+
+Every new or meaningfully changed concept records its generator, and every
+managed concept records lifecycle status. Verification events are added only
+after real checks. Trust tiers are derived, never stored. Source-backed claims
+use `sources` plus matching footnotes; freshness deadlines are written only
+when a real policy exists.
 
 The complete local rules live in
 [`prompts/protocol/memory-okf.md`](prompts/protocol/memory-okf.md) and are copied
@@ -268,8 +284,11 @@ frontmatter a lower weight. Matching is deterministic, accent-insensitive, and
 case-insensitive. Quoted phrases stay intact. There are no embeddings, stemming,
 Levenshtein distance, or body-text matches.
 
-The result is a compact ranked list. The agent selects the smallest useful set,
-normally one to five concepts, and only then reads those Markdown bodies.
+The result is a compact ranked list with derived trust tier, lifecycle status,
+staleness, and outdated-verification warnings. Relevance stays primary; trust
+and freshness are advisory tie-breakers and never silently hide a match. The
+agent selects the smallest useful set, normally one to five concepts, and only
+then reads those Markdown bodies.
 `--all-projects` widens the default global-plus-current-project scope;
 `--limit` and `--all` control result count.
 
@@ -277,7 +296,9 @@ normally one to five concepts, and only then reads those Markdown bodies.
 
 [`wiki-soul-ingest`](skills/wiki-soul-ingest/SKILL.md) transforms an explicitly
 selected file, folder, native-agent memory, or conversation archive into
-curated OKF knowledge. It does not archive raw sources.
+curated OKF 0.2 knowledge. It records real provenance in `sources`, uses
+matching footnotes for attributable claims, and never invents verification or
+source credibility. It does not archive raw sources.
 
 The installer shows the current agent's exact native or manual syntax. Typical
 requests are:
@@ -309,7 +330,8 @@ reorganize all memory
 ```
 
 Maintenance is scoped by default. A full-memory audit runs only when requested
-explicitly.
+explicitly. Maintenance operates only on bundles declaring
+`okf_version: "0.2"` and reports other version states as conflicts.
 
 ## Uninstall
 
@@ -329,11 +351,13 @@ It preserves `~/.agents/memory/` by default.
 ## V1 Non-goals
 
 - Automatic or background ingestion during installation.
-- Destructive migration of native memories or raw transcript archival.
+- Destructive modification of native memories or raw transcript archival.
 - Git backup and automatic commits.
 - End-of-session memory extraction.
 - Concurrent writers and locks.
 - Vector or semantic retrieval.
+- Automatic execution or runtime attestation of `Attested Computation`
+  resources.
 - Certified adapters beyond Claude Code, Codex, Cursor, Pi, and OpenCode.
 
 These boundaries keep the initial system transparent and small.
@@ -368,7 +392,8 @@ These boundaries keep the initial system transparent and small.
 - [Andrej Karpathy's LLM Wiki][llm-wiki] provides the core inspiration: an LLM
   maintains a persistent, compounding, interlinked Markdown knowledge artifact.
 - [Open Knowledge Format (OKF)][okf] provides the normative format for Wiki
-  Soul bundles, concepts, indexes, logs, links, and citations.
+  Soul bundles, concepts, indexes, logs, links, provenance, trust, lifecycle,
+  freshness, and attested computation contracts.
 - [How I Finally Sorted My Claude Code Memory][article] inspired the
   progressive-loading approach: small indexes, project memory, global
   knowledge, and optional hooks.
@@ -379,4 +404,4 @@ the normative knowledge format.
 
 [article]: https://www.youngleaders.tech/p/how-i-finally-sorted-my-claude-code-memory
 [llm-wiki]: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
-[okf]: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
+[okf]: vendor/okf/0.2/SPEC.md

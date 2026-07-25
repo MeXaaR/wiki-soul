@@ -1,20 +1,34 @@
 # Open Knowledge Format compatibility
 
-This document defines the boundary between the official **Open Knowledge Format (OKF) 0.1 — Draft** specification and conventions added by Wiki Soul.
+This document defines the boundary between the vendored **Open Knowledge
+Format (OKF) 0.2** specification and conventions added by Wiki Soul.
 
-It is based on [`okf/SPEC.md` on `main`](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md), as reviewed on July 23, 2026. OKF remains normative. If a conflict appears, Wiki Soul must change or report the incompatibility; it must not silently redefine OKF.
+It is based on the immutable local
+[OKF 0.2 snapshot](../vendor/okf/0.2/SPEC.md), pinned and documented in its
+[provenance record](../vendor/okf/0.2/README.md). That snapshot is normative
+for this framework release. Upstream changes are reviewed only through a
+deliberate maintainer update and never during user installation.
 
 ## 1. Compatibility principle
 
 OKF standardizes a minimal foundation:
 
-- a **Knowledge Bundle** is a self-contained, hierarchical collection of knowledge documents;
+- a **Knowledge Bundle** is a self-contained, hierarchical collection of
+  knowledge documents;
 - a **concept** is a UTF-8 Markdown file with YAML frontmatter;
-- `type` is the only required frontmatter field;
+- `type` is the only always-required frontmatter field;
 - `index.md` and `log.md` are reserved filenames;
-- relationships and citations use Markdown links;
+- Markdown links express relationships;
+- `sources` and matching Markdown footnotes express provenance and per-claim
+  attribution;
+- `generated`, `verified`, derived trust tiers, `status`, and `stale_after`
+  express trust, lifecycle, and freshness;
+- source metadata can carry objective credibility signals;
+- `Attested Computation` describes a sanctioned computation and its
+  verification interface without prescribing an execution runtime;
 - indexes support progressive disclosure;
-- consumers remain permissive toward unknown types, fields, and broken links.
+- consumers remain permissive toward unknown types, fields, broken links, and
+  absent optional metadata.
 
 OKF does not standardize:
 
@@ -25,30 +39,31 @@ OKF does not standardize:
 - rules deciding what is worth remembering;
 - a closed taxonomy for `type`;
 - identities or relationships across bundles;
-- locking, backup, or concurrent agent writes.
+- storage, search, locking, or concurrent writes;
+- executor packaging, receipt wire formats, attester ABI, or sandboxing.
 
 Every behavior in the second list belongs to the Wiki Soul protocol.
 
 ## 2. Conformance units
 
-Each global topic and each project is an autonomous OKF bundle.
+Each global topic and each project is an autonomous OKF 0.2 bundle.
 
 ```text
 ~/.agents/memory/
 ├── index.md                         # Lightweight Wiki Soul catalogue
 ├── protocol.md                      # Local Wiki Soul protocol
 ├── bundles/
-│   ├── stripe/                      # Autonomous OKF bundle
+│   ├── stripe/                      # Autonomous OKF 0.2 bundle
 │   │   ├── index.md
 │   │   ├── log.md                   # Optional
 │   │   ├── webhook-signatures.md
 │   │   └── subscriptions.md
-│   └── typescript/                  # Autonomous OKF bundle
+│   └── typescript/                  # Autonomous OKF 0.2 bundle
 │       ├── index.md
 │       └── esm-gotchas.md
 └── projects/
     ├── index.md                     # Complete project catalogue
-    └── github-com-acme-shop/        # Autonomous OKF bundle
+    └── github-com-acme-shop/        # Autonomous OKF 0.2 bundle
         ├── index.md
         ├── related-bundles.md
         └── payment-architecture.md
@@ -56,14 +71,28 @@ Each global topic and each project is an autonomous OKF bundle.
 
 The OKF conformance units are:
 
-- `bundles/stripe/`;
-- `bundles/typescript/`;
-- every other direct child of `bundles/`;
+- every direct child of `bundles/`;
 - every project directory under `projects/`.
 
-`~/.agents/memory/` is a Wiki Soul container and catalogue. It is not presented as one Knowledge Bundle. This boundary lets topic and project bundles remain independently distributable, as intended by the official [Knowledge Bundle structure](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#3-bundle-structure).
+Each unit's root `index.md` declares:
 
-The root `index.md` and `projects/index.md` are Wiki Soul orchestration catalogues. Their syntax deliberately resembles an OKF index, but they sit outside the autonomous bundle boundaries. `protocol.md` is installation-managed; it may use concept-style frontmatter, but its presence does not turn the memory root into a bundle.
+```yaml
+---
+okf_version: "0.2"
+---
+```
+
+The declaration is optional in official OKF but required by the Wiki Soul
+profile. It is the only frontmatter allowed in an OKF index.
+
+`~/.agents/memory/` is a Wiki Soul container and catalogue, not one Knowledge
+Bundle. The root `index.md` and `projects/index.md` are orchestration
+catalogues outside the autonomous bundle boundaries. `protocol.md` is
+installation-managed. These files do not receive `okf_version`.
+
+This boundary keeps every topic and project independently distributable, as
+intended by the official
+[bundle structure](../vendor/okf/0.2/SPEC.md#3-bundle-structure).
 
 ## 3. Root catalogue and progressive disclosure
 
@@ -74,7 +103,9 @@ The root `index.md` and `projects/index.md` are Wiki Soul orchestration catalogu
 - a rich, concise description for each bundle;
 - one link to the project catalogue.
 
-It does not list every project. The hook computes the current `project-id` and opens the matching project bundle index directly. `projects/index.md` is read only on demand. There is no second global catalogue under `bundles/`; the root catalogue is the single routing source.
+It does not list every project. The hook computes the current `project-id` and
+opens the matching project bundle index directly. `projects/index.md` is read
+only on demand. There is no second global catalogue under `bundles/`.
 
 Example:
 
@@ -93,18 +124,23 @@ Example:
 - [Project catalogue](projects/) — Complete catalogue of project-specific memory bundles.
 ```
 
-Wiki Soul adds no `Use when:` field or line. Routing relies on titles, descriptions, and natural-language terms. This convention supports the progressive-disclosure purpose of [OKF index files](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#6-index-files) without introducing a proprietary index dialect.
+Wiki Soul adds no `Use when:` field. Routing relies on titles, descriptions,
+and natural-language terms. This supports the official
+[index purpose](../vendor/okf/0.2/SPEC.md#8-index-files)
+without creating a proprietary dialect.
 
 ## 4. Concept documents
 
-Inside a bundle, every `.md` file other than `index.md` and `log.md` is an OKF concept. It must:
+Inside a bundle, every `.md` file other than `index.md` and `log.md` is an OKF
+concept. It must:
 
 1. use UTF-8 encoding;
-2. start with YAML frontmatter delimited by `---`;
+2. start with parseable YAML frontmatter delimited by `---`;
 3. contain a non-empty `type`;
 4. contain a free-form Markdown body.
 
-Example:
+Wiki Soul's 0.2 profile additionally requires explicit `status`. It requires
+`generated` on every new or meaningfully changed concept.
 
 ```markdown
 ---
@@ -112,231 +148,283 @@ type: Playbook
 title: Stripe webhook signature validation
 description: Reliable validation of Stripe webhook signatures and common failure modes.
 tags: [stripe, webhooks, security]
-timestamp: 2026-07-23T14:30:00Z
+status: stable
+generated: { by: "codex/5.6", at: 2026-07-25T14:30:00Z }
+verified:
+  - { by: "human:local-reviewer", at: 2026-07-25T15:00:00Z }
+stale_after: 2027-01-25
+sources:
+  - id: stripe-signatures
+    resource: https://docs.stripe.com/webhooks/signature
+    title: Stripe webhook signature documentation
+    author: "process:stripe-docs"
+    last_modified: 2026-07-02
 ---
 
 # Procedure
 
-...
+Use the raw request body when verifying a Stripe signature.[^stripe-signatures]
 
-# Citations
-
-[1] [Stripe webhook signature documentation](https://docs.stripe.com/webhooks/signature)
+[^stripe-signatures]: Stripe webhook signature documentation
 ```
 
-### Metadata
+### 4.1 Core metadata
 
-| Field | OKF rule | Wiki Soul convention |
+| Field | OKF 0.2 rule | Wiki Soul convention |
 |---|---|---|
-| `type` | Required short string; no central taxonomy. | Choose a descriptive type. Do not impose a closed vocabulary. |
-| `title` | Optional and recommended. | Populate it to improve reading and routing. |
-| `description` | Optional and recommended; one sentence. | Write a precise, information-rich sentence useful for routing. |
-| `resource` | Optional canonical URI for the described resource. | Use only when the concept describes an identifiable asset. Omit for abstract ideas, preferences, and procedures without a canonical asset. |
-| `tags` | Optional YAML list of short strings. | No required vocabulary. Avoid unnecessary synonyms and variants. |
-| `timestamp` | Optional ISO 8601 datetime of the last meaningful change. | Update after every meaningful change. Use a complete datetime with `Z` or an explicit offset. |
+| `type` | Required short string; no central taxonomy. | Choose a descriptive type. Never impose a closed vocabulary. |
+| `title` | Optional and recommended. | Populate it for reading and routing. |
+| `description` | Optional and recommended; one sentence. | Write a precise, information-rich retrieval description. |
+| `resource` | Optional canonical URI for the asset the concept describes. | Use only for an identifiable underlying asset, not generic provenance. |
+| `tags` | Optional list of short strings. | Avoid unnecessary synonyms and variants. |
+| `generated` | Optional family; `by` is required within it and `at` records meaningful change time. | Required for new or meaningfully changed content. |
+| `verified` | Optional mapping or list of verification events. | Write only after a real check; prefer a list for new writes. |
+| `status` | Optional `draft`, `stable`, or `deprecated`; absent means `stable`. | Required explicitly. |
+| `stale_after` | Optional absolute `YYYY-MM-DD`; stale on and after this date. | Add only when backed by a real freshness policy. |
+| `sources` | Optional provenance list; every entry requires `resource`. | Use for material the concept derives from. |
+| `usage_window` | Optional shared window for source `usage_count`. | Require a shared or entry-level window whenever a count is present. |
 
-OKF permits producer-defined keys. Wiki Soul requires none and does not add proprietary fields such as `source:` or `status:`. Generic consumers should preserve unknown fields when round-tripping, as described by the official [frontmatter rules](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#41-frontmatter). Wiki Soul makes preservation mandatory for its own writers.
+OKF permits producer-defined keys. Wiki Soul adds no proprietary `source`,
+stored trust score, or stored trust-tier field. Its writers preserve unknown
+fields when round-tripping.
 
 File and directory names follow a Wiki Soul convention not required by OKF:
+stable ASCII `kebab-case`, with content in the user's working language. One
+concept represents one coherent unit of knowledge. The 200-line or 8-KiB
+target is a review threshold, not an OKF limit.
 
-- ASCII characters;
-- `kebab-case`;
-- stable names;
-- content written in the user’s natural language.
+## 5. Actors, verification, and trust
 
-One concept represents one coherent unit of knowledge. Wiki Soul targets fewer than 200 lines or 8 KiB, but this is a soft threshold. Meaning determines whether a document should be split.
+Identity fields use the official actor convention:
 
-## 5. Indexes and logs
+- `<producer>/<version>` for an agent or tool;
+- `human:<stable-id>` for a person;
+- `process:<stable-id>` for an automated process.
 
-### `index.md`
+Wiki Soul prefers the current host's factual producer and version. When the
+host exposes no version, it uses the explicit `wiki-soul/unknown` fallback
+instead of guessing one. It never writes `human:unknown`; a human identifier
+must be supplied or approved and must not expose an email address, credential,
+or unnecessary personal data.
 
-Under OKF, an `index.md`:
+`generated` answers who produced the current content and when it last changed
+meaningfully. `verified` answers who later or independently checked that
+content against its sources, resource, or authoritative observation. A
+successful generation, parse, or schema validation does not prove the
+underlying knowledge.
+
+Consumers derive these trust tiers:
+
+| `verified` state | Derived tier |
+|---|---|
+| Absent | `unverified` |
+| Only non-`human:` actors | `machine-confirmed` |
+| At least one `human:` actor | `human-reviewed` |
+
+Trust tiers are advisory, never access control, and are not stored. When
+`generated.at` is newer than every verification event, Wiki Soul surfaces an
+outdated-verification warning while retaining the formal tier derived by OKF.
+
+## 6. Lifecycle and freshness
+
+Wiki Soul writes one explicit status:
+
+- `draft`: incomplete or not ready for normal consumption;
+- `stable`: current and ready;
+- `deprecated`: retained for links or history but no longer current.
+
+Deprecated concepts explain the transition and link to a replacement when
+bundle rules allow it. Wiki Soul records lifecycle only through OKF 0.2
+`status`; it does not use a `deprecated` tag.
+
+`stale_after` is an absolute date. `today >= stale_after` means stale. It is
+not a relative TTL. Wiki Soul never invents a deadline. Missing
+`stale_after` means no declared deadline, not guaranteed freshness.
+
+## 7. Provenance and source credibility
+
+Materials from which a concept derives live in `sources` frontmatter. Each
+entry:
+
+- requires `resource`, which may be an absolute URL, a bundle path, a
+  `references/` path, or a scope descriptor;
+- should have a stable unique `id`;
+- must have an `id` when a body footnote cites it;
+- may have `title`;
+- may carry objective `author`, `usage_count`, and `last_modified` signals.
+
+`author` uses the actor convention. `last_modified` describes the source, not
+the concept. `usage_count` describes use over `usage_window`; it is a coarse
+liveness and trend signal, not a score. One top-level window may frame all
+entries, while one entry may override it.
+
+Per-claim attribution uses a Markdown footnote label equal to `sources[].id`.
+The footnote label is the join key; consumers do not parse its prose to locate
+the source.
+
+Wiki Soul adds these rules:
+
+- never invent a source, credibility signal, or claim attribution;
+- cite durable material that supports an external claim;
+- do not require artificial sources for user preferences, internal decisions,
+  or directly verified local observations;
+- never copy a secret or sensitive value into memory as evidence;
+- use `sources` instead of a body-level citations section or proprietary
+  `source:` fields.
+
+Lineage between OKF concepts remains ordinary Markdown linking. OKF 0.2 does
+not add a separate `derived_from` graph.
+
+See official
+[provenance rules](../vendor/okf/0.2/SPEC.md#51-provenance-sources).
+
+## 8. Attested Computation
+
+OKF 0.2 adds `type: Attested Computation` for a sanctioned way to compute a
+value. Its top-level contract can contain:
+
+- required `runtime`;
+- typed `parameters` that are the only holes an agent may fill;
+- either an inline fenced computation under `# Computation` or a
+  `computation` path;
+- `executor.resource` and the fields required in `executor.receipt`;
+- `attester.resource` pointing to deterministic, no-LLM checking code;
+- the normal provenance, trust, lifecycle, and freshness families.
+
+The computation is a standalone concept. Narrative metrics and reports link
+to it through ordinary Markdown links.
+
+Wiki Soul preserves, indexes, and structurally validates this contract. It
+does not provide a trusted executor, receipt protocol, sandbox, or attester
+runtime. Hooks, query, ingestion, maintenance, and normal reads never execute
+referenced computation, executor, or attester content. Receipts and verdicts
+are per-run artifacts, not bundle proof. Active execution is deferred to a
+separate, explicitly invoked capability.
+
+See the official
+[Attested Computation contract](../vendor/okf/0.2/SPEC.md#10-attested-computations-concept).
+
+## 9. Indexes and logs
+
+An OKF `index.md`:
 
 - may appear at any level of a bundle;
 - enumerates concepts or subdirectories for progressive disclosure;
 - uses Markdown entries with short descriptions;
-- normally has no frontmatter.
+- normally has no frontmatter;
+- may use `okf_version` frontmatter only at the bundle root.
 
-The only official exception is a bundle-root `index.md`, which may declare its target version:
+Wiki Soul requires `okf_version: "0.2"` in every autonomous bundle root. It
+updates an index when structure or an indexed retrieval description changes,
+not for every internal correction.
 
-```yaml
----
-okf_version: "0.1"
----
-```
+`log.md` remains optional. When present, date groups are newest first and every
+date heading is exactly `YYYY-MM-DD`. Labels such as `Update`, `Creation`, or
+`Deprecation` are prose conventions.
 
-This declaration is optional. It is the only place where OKF permits frontmatter in an index, according to [Versioning](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#11-versioning).
-
-Wiki Soul updates an index when creating, deleting, merging, splitting, renaming, or changing the description of an indexed item. An internal correction to an existing concept does not require an index rewrite.
-
-### `log.md`
-
-`log.md` remains optional. When present:
-
-- date groups are ordered newest first;
-- every date heading uses exactly `YYYY-MM-DD`;
-- entries are free-form prose;
-- labels such as `Update`, `Creation`, or `Deprecation` are conventions, not normative values.
-
-Wiki Soul reserves logs for significant changes. It does not log every write automatically. See the official [OKF log format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#7-log-files-optional).
-
-## 6. Link protocol
-
-### Internal links
+## 10. Link protocol
 
 Within one bundle:
 
-- concepts use standard Markdown links;
-- links beginning with `/` are relative to the bundle root;
-- `./` and `../` links use standard relative-path behavior;
-- surrounding prose expresses the relationship;
-- OKF assigns no formal type to that relationship.
+- standard Markdown links express relationships;
+- links beginning with `/` are bundle-root-relative;
+- `./` and `../` links use standard relative behavior;
+- surrounding prose expresses relationship meaning;
+- consumers tolerate broken links.
 
-Bundle-relative absolute links are preferred when a target should remain stable after moving the source document. Consumers must tolerate broken links. See [Cross-linking](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#5-cross-linking).
+Wiki Soul prohibits global-to-global, global-to-project, and global backlinks
+by convention. A topic bundle remains self-contained.
 
-### General ban on inter-bundle links
-
-Wiki Soul prohibits by convention:
-
-- outbound links from one global bundle to another global bundle;
-- links from a global bundle to a project;
-- global backlinks to projects;
-- dependencies required to understand a global bundle.
-
-A topic bundle must remain self-contained.
-
-### Sole exception: project to global bundle
-
-A project bundle may reference global bundles that are durably relevant to it. These references live only in `related-bundles.md`.
+The sole exception is a project bundle's `related-bundles.md` concept:
 
 ```markdown
 ---
 type: Reference
 title: Related global knowledge bundles
 description: Global knowledge bundles used by this project.
-timestamp: 2026-07-23T14:30:00Z
+status: stable
+generated: { by: "codex/5.6", at: 2026-07-25T14:30:00Z }
 ---
 
 # Related bundles
 
-- [Stripe](../../bundles/stripe/index.md) — Stripe payments, subscriptions, and webhook knowledge used by this project.
-- [TypeScript](../../bundles/typescript/index.md) — TypeScript and ESM knowledge used by this project.
+- [Stripe](../../bundles/stripe/index.md) — Stripe knowledge used by this project.
 ```
 
-The project `index.md` links to that concept:
+This is a valid local Markdown link and a Wiki Soul convention, not a
+standardized OKF inter-bundle relationship. It can break when the project
+bundle is exported alone. Generic consumers remain able to consume the bundle
+because OKF tolerates broken links.
 
-```markdown
-- [Related global bundles](related-bundles.md) — Global knowledge bundles durably relevant to this project.
-```
+## 11. Validation and conformance
 
-Wiki Soul rules:
+Conformance is checked bundle by bundle, never across all of
+`~/.agents/memory/`.
 
-- a one-off consultation creates no relationship;
-- recurring use or a dependent project concept may add the relationship automatically;
-- the global bundle never creates a backlink;
-- the project remains understandable when external links do not resolve;
-- links target the global bundle’s root `index.md`, not a presumed-stable internal concept path.
-
-### Limitation of this exception
-
-OKF 0.1 defines no global bundle identifier, bundle registry, inter-bundle relationship schema, or resolution rule beyond a bundle root.
-
-`../../bundles/stripe/index.md` is therefore:
-
-- a valid Markdown link inside the local Wiki Soul installation;
-- a Wiki Soul convention;
-- non-portable when the project bundle is copied alone;
-- potentially treated as broken by a generic OKF consumer;
-- not interpretable as a standardized inter-bundle relationship.
-
-This exception must never be presented as a native OKF capability. The requirement that consumers tolerate broken links keeps the bundle consumable, but it gives the link no standardized inter-bundle semantics.
-
-## 7. Citations and provenance
-
-When a concept makes claims derived from durable external sources, Wiki Soul follows the OKF convention:
-
-```markdown
-# Citations
-
-[1] [Source title](https://example.com/source)
-```
-
-The section appears at the bottom of the document. Citations may use absolute URLs, paths within the bundle, or local references represented as OKF concepts.
-
-Wiki Soul adds these rules:
-
-- never invent a citation;
-- cite durable documentation, pages, or sources supporting an external claim;
-- do not require citations for user preferences, internal decisions, or directly verified local observations;
-- do not replace citations with a `source:` field;
-- never copy a secret or sensitive value into memory as evidence.
-
-See the official [Citations section](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#8-citations).
-
-## 8. Validation and conformance
-
-Conformance is checked bundle by bundle, never across all of `~/.agents/memory/`.
-
-An OKF 0.1 bundle is conformant when:
+An official OKF 0.2 bundle is conformant when:
 
 1. every non-reserved `.md` file contains parseable YAML frontmatter;
 2. every frontmatter block contains a non-empty `type`;
-3. every present `index.md` follows the OKF index structure;
-4. every present `log.md` follows the OKF log structure.
+3. every present `index.md` and `log.md` follows its reserved structure.
 
-A conforming consumer must not reject a bundle because of:
+Consumers do not reject a bundle solely for a missing optional field, unknown
+type, extension field, broken link, or missing index.
 
-- a missing optional field;
-- an unknown `type`;
-- an additional frontmatter key;
-- a broken link;
-- a missing `index.md`.
+Wiki Soul's stricter profile additionally validates:
 
-Wiki Soul performs incremental validation after every write:
+- required `generated` for new or meaningfully changed concepts and explicit
+  valid `status`;
+- actor and date forms;
+- `verified` mapping/list shape;
+- freshness and source credibility dates;
+- source resources, unique IDs, and footnote joins;
+- usage counts and windows;
+- Attested Computation structure without execution;
+- `okf_version: "0.2"` in every autonomous bundle root;
+- encoding, retrieval metadata, local links, and forbidden content.
 
-- check only touched files and their index links;
-- reread a concept immediately before modifying it;
-- validate YAML, `type`, encoding, title, description, and `timestamp`;
-- check for secrets and prohibited content;
-- repair immediately or restore the previous content on failure.
+Normal writes validate touched concepts and affected indexes. Full maintenance
+audits remain explicit.
 
-A full audit occurs only during an explicit memory reorganization. This validation is a Wiki Soul guarantee, not an OKF requirement.
+See official
+[conformance](../vendor/okf/0.2/SPEC.md#11-conformance).
 
-The complete normative list appears in [Conformance](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#9-conformance).
-
-## 9. Responsibility matrix
+## 12. Responsibility matrix
 
 | Element | Source |
 |---|---|
 | UTF-8 Markdown with YAML frontmatter | OKF |
 | Required, extensible `type` | OKF |
-| `title`, `description`, `resource`, `tags`, `timestamp` | OKF |
-| `index.md`, `log.md`, citations, and Markdown links | OKF |
-| Tolerance of unknown types, fields, and broken links | OKF |
-| Autonomous bundles as distribution units | OKF |
-| `~/.agents/memory/` root | Wiki Soul |
-| Root catalogue and separate project catalogue | Wiki Soul |
-| Global bundles organized by topic | Wiki Soul |
-| Project bundles derived from Git identity | Wiki Soul |
+| `title`, `description`, `resource`, and `tags` | OKF |
+| `sources`, footnote attribution, and credibility signals | OKF 0.2 |
+| `generated`, `verified`, and derived trust tiers | OKF 0.2 |
+| `status` and `stale_after` | OKF 0.2 |
+| `Attested Computation` on-disk contract | OKF 0.2 |
+| `index.md`, `log.md`, and Markdown links | OKF |
+| `generated` on new/changed content, explicit `status`, and root `okf_version` | Wiki Soul profile |
+| `~/.agents/memory/` root and catalogues | Wiki Soul |
+| Global topics and Git-derived project bundles | Wiki Soul |
 | Rich descriptions without `Use when:` | Wiki Soul, compatible with OKF |
-| Hook-based routing and progressive reading | Wiki Soul |
-| Soft threshold of 200 lines or 8 KiB | Wiki Soul |
-| Validation after every write | Wiki Soul |
-| No proprietary `type` taxonomy | Wiki Soul choice aligned with OKF |
-| `project → global bundle` link through `related-bundles.md` | Wiki Soul exception, not standardized by OKF |
+| Hook routing, metadata search, and progressive reading | Wiki Soul |
+| 200-line or 8-KiB review threshold | Wiki Soul |
+| Project-to-global link through `related-bundles.md` | Wiki Soul exception |
+| No automatic execution of Attested Computation resources | Wiki Soul security |
 
-## 10. Known limits
+## 13. Known limits
 
-- OKF 0.1 remains a draft. Changes on `main` may change these conclusions.
-- A collection of bundles in one directory does not automatically make that directory a bundle.
+- A collection of bundles in one directory is not automatically one bundle.
 - Wiki Soul catalogues outside bundles are not OKF conformance units.
 - The project-to-global link exception depends on the local directory layout.
-- Exporting a project bundle alone can break its links to global bundles.
-- OKF supplies no validation, migration, search, injection, security, or concurrency mechanism.
-- Syntactic conformance guarantees neither truth, relevance, nor safety of remembered content.
+- Exporting a project bundle alone can break its global-bundle links.
+- OKF supplies no query, injection, security, or concurrency implementation.
+- OKF 0.2 fixes the attestation interface, not execution packaging, ABI,
+  sandboxing, or caching.
+- Syntactic conformance and a trust tier guarantee neither truth, relevance,
+  safety, nor a successful runtime attestation.
 
-## Official sources
+## Contract sources
 
-- [Open Knowledge Format — SPEC.md](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)
-- [Raw specification on `main`](https://raw.githubusercontent.com/GoogleCloudPlatform/knowledge-catalog/main/okf/SPEC.md)
-- [Official GoogleCloudPlatform/knowledge-catalog repository](https://github.com/GoogleCloudPlatform/knowledge-catalog)
+- [Vendored OKF 0.2 specification](../vendor/okf/0.2/SPEC.md)
+- [Snapshot provenance and maintainer update rule](../vendor/okf/0.2/README.md)
+- [Pinned upstream source](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/3fcbb9f828c2f23d109c855ee403c3a4c81f3a96/okf/SPEC.md)
+- [Official upstream repository](https://github.com/GoogleCloudPlatform/knowledge-catalog)

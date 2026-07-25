@@ -19,6 +19,16 @@ const FIELD_WEIGHTS = {
 const COVERAGE_BONUS = 3;
 const RESERVED_FILES = new Set(['index.md', 'log.md']);
 const PROJECT_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?-[a-f0-9]{8}$/u;
+const TRUST_RANK = {
+  unverified: 0,
+  'machine-confirmed': 1,
+  'human-reviewed': 2,
+};
+const STATUS_RANK = {
+  deprecated: 0,
+  draft: 1,
+  stable: 2,
+};
 
 function normalize(value) {
   return String(value)
@@ -473,6 +483,607 @@ function firstField(fields, name) {
   return fields.find((field) => field.key.toLowerCase() === name);
 }
 
+function stripYamlComment(value) {
+  let quote = null;
+  let escaped = false;
+
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === '\\' && quote === '"') {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (character === quote) {
+        if (quote === "'" && value[index + 1] === "'") {
+          index += 1;
+        } else {
+          quote = null;
+        }
+      }
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character === '#' && (index === 0 || /\s/u.test(value[index - 1]))) {
+      return value.slice(0, index);
+    }
+  }
+
+  return value;
+}
+
+function parseQuotedScalar(value) {
+  const input = value.trim();
+  const quote = input[0];
+  if (quote !== '"' && quote !== "'") {
+    return null;
+  }
+
+  if (quote === '"') {
+    let escaped = false;
+    for (let index = 1; index < input.length; index += 1) {
+      const character = input[index];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (character === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (character === '"') {
+        if (input.slice(index + 1).trim()) {
+          return null;
+        }
+        try {
+          return JSON.parse(input.slice(0, index + 1));
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
+  let parsed = '';
+  for (let index = 1; index < input.length; index += 1) {
+    if (input[index] !== "'") {
+      parsed += input[index];
+      continue;
+    }
+    if (input[index + 1] === "'") {
+      parsed += "'";
+      index += 1;
+      continue;
+    }
+    return input.slice(index + 1).trim() ? null : parsed;
+  }
+  return null;
+}
+
+function parseYamlScalarValue(value) {
+  const input = stripYamlComment(String(value)).trim();
+  if (!input || /^[~]$|^null$/iu.test(input)) {
+    return null;
+  }
+  if (input[0] === '"' || input[0] === "'") {
+    return parseQuotedScalar(input);
+  }
+  if (/^[{[>|]/u.test(input)) {
+    return null;
+  }
+  return input;
+}
+
+function parseYamlKeyValue(value) {
+  const input = stripYamlComment(value).trim();
+  if (!input) {
+    return null;
+  }
+
+  if (input[0] === '"' || input[0] === "'") {
+    const quote = input[0];
+    let escaped = false;
+    let end = -1;
+    for (let index = 1; index < input.length; index += 1) {
+      const character = input[index];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (character === '\\' && quote === '"') {
+        escaped = true;
+        continue;
+      }
+      if (character === quote) {
+        if (quote === "'" && input[index + 1] === "'") {
+          index += 1;
+        } else {
+          end = index;
+          break;
+        }
+      }
+    }
+    if (end === -1) {
+      return null;
+    }
+    const key = parseQuotedScalar(input.slice(0, end + 1));
+    const remainder = input.slice(end + 1).match(/^\s*:\s*([\s\S]*)$/u);
+    return typeof key === 'string' && remainder ? { key, rawValue: remainder[1] } : null;
+  }
+
+  const match = input.match(/^([A-Za-z0-9_.-]+)\s*:\s*([\s\S]*)$/u);
+  return match ? { key: match[1], rawValue: match[2] } : null;
+}
+
+function newMappingRecord() {
+  return {
+    values: new Map(),
+    duplicates: new Set(),
+  };
+}
+
+function addMappingValue(record, key, rawValue) {
+  if (key !== 'by' && key !== 'at') {
+    return;
+  }
+  if (record.values.has(key)) {
+    record.duplicates.add(key);
+    return;
+  }
+  record.values.set(key, parseYamlScalarValue(rawValue));
+}
+
+function splitTopLevel(value) {
+  const parts = [];
+  const delimiters = [];
+  let quote = null;
+  let escaped = false;
+  let start = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === '\\' && quote === '"') {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (character === quote) {
+        if (quote === "'" && value[index + 1] === "'") {
+          index += 1;
+        } else {
+          quote = null;
+        }
+      }
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character === '{' || character === '[') {
+      delimiters.push(character);
+      continue;
+    }
+    if (character === '}' || character === ']') {
+      const expected = character === '}' ? '{' : '[';
+      if (delimiters.pop() !== expected) {
+        return null;
+      }
+      continue;
+    }
+    if (character === ',' && delimiters.length === 0) {
+      parts.push(value.slice(start, index));
+      start = index + 1;
+    }
+  }
+
+  if (quote || delimiters.length > 0) {
+    return null;
+  }
+  parts.push(value.slice(start));
+  return parts;
+}
+
+function parseFlowMapping(value) {
+  const input = stripYamlComment(value).trim();
+  if (!input.startsWith('{') || !input.endsWith('}')) {
+    return null;
+  }
+  const parts = splitTopLevel(input.slice(1, -1));
+  if (!parts) {
+    return null;
+  }
+
+  const record = newMappingRecord();
+  for (const part of parts) {
+    if (!part.trim()) {
+      continue;
+    }
+    const keyValue = parseYamlKeyValue(part);
+    if (!keyValue) {
+      return null;
+    }
+    addMappingValue(record, keyValue.key, keyValue.rawValue);
+  }
+  return record;
+}
+
+function parseFlowMappingList(value) {
+  const input = stripYamlComment(value).trim();
+  if (!input.startsWith('[') || !input.endsWith(']')) {
+    return [];
+  }
+  const parts = splitTopLevel(input.slice(1, -1));
+  if (!parts) {
+    return [];
+  }
+  return parts.map(parseFlowMapping).filter(Boolean);
+}
+
+function lineIndent(line) {
+  const match = line.match(/^ */u);
+  return match ? match[0].length : 0;
+}
+
+function parseBlockMapping(lines) {
+  const content = lines.filter((line) => stripYamlComment(line).trim());
+  if (content.length === 0) {
+    return null;
+  }
+  const baseIndent = Math.min(...content.map(lineIndent));
+  const record = newMappingRecord();
+
+  for (const line of content) {
+    if (lineIndent(line) !== baseIndent) {
+      continue;
+    }
+    const keyValue = parseYamlKeyValue(line);
+    if (!keyValue) {
+      return null;
+    }
+    addMappingValue(record, keyValue.key, keyValue.rawValue);
+  }
+  return record;
+}
+
+function parseBlockMappingList(lines) {
+  const content = lines.filter((line) => stripYamlComment(line).trim());
+  if (content.length === 0) {
+    return [];
+  }
+  const listIndent = lineIndent(content[0]);
+  if (!stripYamlComment(content[0].slice(listIndent)).trim().startsWith('-')) {
+    return [];
+  }
+
+  const records = [];
+  let currentLines = null;
+  function flush() {
+    if (currentLines) {
+      const record = parseBlockMapping(currentLines);
+      if (record) {
+        records.push(record);
+      }
+    }
+    currentLines = null;
+  }
+
+  for (const line of content) {
+    const indent = lineIndent(line);
+    const trimmed = stripYamlComment(line.slice(indent)).trim();
+    const item = indent === listIndent ? trimmed.match(/^-\s*([\s\S]*)$/u) : null;
+    if (item) {
+      flush();
+      const itemValue = item[1].trim();
+      if (itemValue.startsWith('{')) {
+        const record = parseFlowMapping(itemValue);
+        if (record) {
+          records.push(record);
+        }
+      } else if (!itemValue) {
+        currentLines = [];
+      } else if (parseYamlKeyValue(itemValue)) {
+        currentLines = [`${' '.repeat(listIndent + 2)}${itemValue}`];
+      }
+      continue;
+    }
+    if (currentLines && indent > listIndent) {
+      currentLines.push(line);
+    }
+  }
+  flush();
+  return records;
+}
+
+function mappingRecords(field, allowList) {
+  if (!field) {
+    return [];
+  }
+  const inline = stripYamlComment(field.lines[0] || '').trim();
+  if (inline) {
+    if (inline.startsWith('{')) {
+      const record = parseFlowMapping(inline);
+      return record ? [record] : [];
+    }
+    return allowList && inline.startsWith('[') ? parseFlowMappingList(inline) : [];
+  }
+
+  const lines = field.lines.slice(1);
+  const firstLine = lines.find((line) => stripYamlComment(line).trim());
+  if (!firstLine) {
+    return [];
+  }
+  if (allowList && stripYamlComment(firstLine).trim().startsWith('-')) {
+    return parseBlockMappingList(lines);
+  }
+  const record = parseBlockMapping(lines);
+  return record ? [record] : [];
+}
+
+function scalarFieldValue(field) {
+  return field ? parseYamlScalarValue(field.lines[0] || '') || '' : '';
+}
+
+function isoDateValue(value) {
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/u);
+  if (!match) {
+    return null;
+  }
+
+  const timestamp = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  const date = new Date(timestamp);
+  return (
+    date.getUTCFullYear() === Number(match[1])
+    && date.getUTCMonth() === Number(match[2]) - 1
+    && date.getUTCDate() === Number(match[3])
+  ) ? value : null;
+}
+
+function isoDateTime(value) {
+  const match = String(value).match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(Z|[+-](\d{2}):(\d{2}))?$/u,
+  );
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6] || 0);
+  const millisecond = Number((match[7] || '').slice(0, 3).padEnd(3, '0'));
+  const offsetHour = Number(match[9] || 0);
+  const offsetMinute = Number(match[10] || 0);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+  if (
+    month < 1
+    || month > 12
+    || day < 1
+    || day > daysInMonth[month - 1]
+    || hour > 23
+    || minute > 59
+    || second > 59
+    || offsetHour > 23
+    || offsetMinute > 59
+  ) {
+    return null;
+  }
+
+  const instant = new Date(0);
+  instant.setUTCFullYear(year, month - 1, day);
+  instant.setUTCHours(hour, minute, second, millisecond);
+  let timestamp = instant.getTime();
+  if (match[8] && match[8] !== 'Z') {
+    const direction = match[8][0] === '+' ? 1 : -1;
+    timestamp -= direction * ((offsetHour * 60) + offsetMinute) * 60 * 1000;
+  }
+  return { value, timestamp };
+}
+
+function validActor(value) {
+  if (typeof value !== 'string' || /[\s\p{Cc}]/u.test(value)) {
+    return false;
+  }
+  if (value.startsWith('human:')) {
+    return value.length > 'human:'.length;
+  }
+  if (value.startsWith('process:')) {
+    return value.length > 'process:'.length;
+  }
+  const segments = value.split('/');
+  return segments.length === 2 && segments.every(Boolean);
+}
+
+function validActorDateEvent(record) {
+  if (!record || record.duplicates.has('by') || record.duplicates.has('at')) {
+    return null;
+  }
+  const by = record.values.get('by');
+  const at = isoDateTime(record.values.get('at'));
+  return validActor(by) && at ? { by, at } : null;
+}
+
+function scanStructuralYaml(value, delimiters) {
+  const input = stripYamlComment(value);
+  let quote = null;
+  let escaped = false;
+
+  for (let index = 0; index < input.length; index += 1) {
+    const character = input[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === '\\' && quote === '"') {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (character === quote) {
+        if (quote === "'" && input[index + 1] === "'") {
+          index += 1;
+        } else {
+          quote = null;
+        }
+      }
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character === '{' || character === '[') {
+      delimiters.push(character);
+      continue;
+    }
+    if (character === '}' || character === ']') {
+      const expected = character === '}' ? '{' : '[';
+      if (delimiters.pop() !== expected) {
+        return false;
+      }
+    }
+  }
+  return quote === null && !escaped;
+}
+
+function validFrontmatterStructure(frontmatter) {
+  const delimiters = [];
+  let sawTopLevelField = false;
+  let topLevelAllowsBlock = false;
+  let blockScalarIndent = null;
+
+  for (const line of frontmatter.split(/\r?\n/u)) {
+    const leadingWhitespace = line.match(/^[\t ]*/u)?.[0] || '';
+    if (leadingWhitespace.includes('\t')) {
+      return false;
+    }
+    const indent = leadingWhitespace.length;
+    const uncommented = stripYamlComment(line);
+    const trimmed = uncommented.trim();
+
+    if (blockScalarIndent !== null) {
+      if (!trimmed || indent > blockScalarIndent) {
+        continue;
+      }
+      blockScalarIndent = null;
+    }
+    if (!trimmed) {
+      continue;
+    }
+
+    if (indent === 0) {
+      if (delimiters.length > 0) {
+        return false;
+      }
+      const keyValue = parseYamlKeyValue(uncommented);
+      if (!keyValue) {
+        return false;
+      }
+      sawTopLevelField = true;
+      const rawValue = keyValue.rawValue.trim();
+      const blockScalar = /^[>|][+-]?\d*$/u.test(rawValue);
+      if (!blockScalar && !scanStructuralYaml(uncommented, delimiters)) {
+        return false;
+      }
+      topLevelAllowsBlock = !rawValue || blockScalar || delimiters.length > 0;
+      if (blockScalar) {
+        blockScalarIndent = 0;
+      }
+      continue;
+    }
+
+    if (!sawTopLevelField || !topLevelAllowsBlock) {
+      return false;
+    }
+    if (delimiters.length === 0) {
+      const listItem = trimmed.match(/^-\s*([\s\S]*)$/u);
+      if (!listItem && !parseYamlKeyValue(trimmed)) {
+        return false;
+      }
+      const nestedKeyValue = listItem && listItem[1]
+        ? parseYamlKeyValue(listItem[1])
+        : parseYamlKeyValue(trimmed);
+      if (
+        nestedKeyValue
+        && /^[>|][+-]?\d*$/u.test(nestedKeyValue.rawValue.trim())
+      ) {
+        blockScalarIndent = indent;
+        continue;
+      }
+    }
+    if (!scanStructuralYaml(uncommented, delimiters)) {
+      return false;
+    }
+  }
+
+  return sawTopLevelField && delimiters.length === 0;
+}
+
+function currentCalendarDate() {
+  const now = new Date();
+  return [
+    String(now.getFullYear()).padStart(4, '0'),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+function okfSignals(fields, today) {
+  const statusValue = scalarFieldValue(firstField(fields, 'status'));
+  const status = statusValue ? statusValue.toLowerCase() : 'stable';
+  const staleAfterValue = scalarFieldValue(firstField(fields, 'stale_after'));
+  const staleAfter = isoDateValue(staleAfterValue);
+  const stale = Boolean(staleAfter && today >= staleAfter);
+
+  const verifiedEvents = mappingRecords(firstField(fields, 'verified'), true)
+    .map(validActorDateEvent)
+    .filter(Boolean);
+  const trustTier = verifiedEvents.length === 0
+    ? 'unverified'
+    : verifiedEvents.some((event) => event.by.startsWith('human:'))
+      ? 'human-reviewed'
+      : 'machine-confirmed';
+  verifiedEvents.sort((left, right) => (
+    right.at.timestamp - left.at.timestamp
+    || (left.at.value < right.at.value ? -1 : left.at.value > right.at.value ? 1 : 0)
+  ));
+  const lastVerification = verifiedEvents[0]?.at;
+
+  const generatedAt = mappingRecords(firstField(fields, 'generated'), false)
+    .map(validActorDateEvent)
+    .find(Boolean)?.at;
+  const verificationOutdated = Boolean(
+    generatedAt
+    && lastVerification
+    && generatedAt.timestamp > lastVerification.timestamp
+  );
+
+  return {
+    status,
+    stale,
+    ...(staleAfterValue ? { staleAfter: staleAfterValue } : {}),
+    trustTier,
+    ...(lastVerification ? { lastVerifiedAt: lastVerification.value } : {}),
+    verificationOutdated,
+  };
+}
+
 function queryTerms(rawTerms) {
   const seen = new Set();
   const terms = [];
@@ -497,9 +1108,9 @@ function matchingTerms(value, terms) {
     .map((term) => term.original);
 }
 
-function resultForDocument({ filePath, memoryRoot, scope, terms }) {
+function resultForDocument({ filePath, memoryRoot, scope, terms, today }) {
   const frontmatter = readFrontmatter(filePath);
-  if (frontmatter === null) {
+  if (frontmatter === null || !validFrontmatterStructure(frontmatter)) {
     return null;
   }
 
@@ -556,6 +1167,7 @@ function resultForDocument({ filePath, memoryRoot, scope, terms }) {
   if (matchedFrontmatter.length > 0) {
     matches.frontmatter = matchedFrontmatter;
   }
+  const signals = okfSignals(fields, today);
 
   return {
     path: toPosix(path.relative(memoryRoot, filePath)),
@@ -567,6 +1179,7 @@ function resultForDocument({ filePath, memoryRoot, scope, terms }) {
     score,
     matchedTermCount: coveredTerms.size,
     matches,
+    ...signals,
   };
 }
 
@@ -633,7 +1246,14 @@ function collectScopes(memoryRoot, projectId, allProjects) {
   return scopes;
 }
 
-function queryMemory({ memoryRoot, projectId, allProjects, limit, rawTerms }) {
+function queryMemory({
+  memoryRoot,
+  projectId,
+  allProjects,
+  limit,
+  rawTerms,
+  today = currentCalendarDate(),
+}) {
   const realMemoryRoot = fs.realpathSync(memoryRoot);
   const terms = queryTerms(rawTerms);
   if (terms.length === 0) {
@@ -651,6 +1271,7 @@ function queryMemory({ memoryRoot, projectId, allProjects, limit, rawTerms }) {
         memoryRoot: realMemoryRoot,
         scope: scope.name,
         terms,
+        today,
       });
       if (result) {
         ranked.push({ ...result, scopeRank: scope.rank });
@@ -661,6 +1282,10 @@ function queryMemory({ memoryRoot, projectId, allProjects, limit, rawTerms }) {
   ranked.sort((left, right) => (
     right.score - left.score
     || right.matchedTermCount - left.matchedTermCount
+    || (STATUS_RANK[right.status] ?? STATUS_RANK.stable) - (STATUS_RANK[left.status] ?? STATUS_RANK.stable)
+    || Number(left.stale) - Number(right.stale)
+    || Number(left.verificationOutdated) - Number(right.verificationOutdated)
+    || TRUST_RANK[right.trustTier] - TRUST_RANK[left.trustTier]
     || left.scopeRank - right.scopeRank
     || (left.path < right.path ? -1 : left.path > right.path ? 1 : 0)
   ));
@@ -835,6 +1460,158 @@ function runSelfTest() {
       path.join(memoryRoot, 'projects', currentProjectId, 'a-deterministic.md'),
       'type: Note\ntitle: deterministic-order-term',
     );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf', 'human-current.md'),
+      [
+        'type: Reference',
+        'description: okf-signal-order',
+        'generated:',
+        '  by: wiki-soul/0.2',
+        '  at: 2026-06-20T09:00:00Z',
+        'verified: { by: human:reviewer, at: 2026-06-25T09:00:00Z }',
+        'stale_after: 2099-01-01',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf', 'machine-list.md'),
+      [
+        'type: Reference',
+        'description: okf-signal-order',
+        'status: stable',
+        'generated: { by: wiki-soul/0.2, at: 2026-06-20T09:00:00Z }',
+        'verified:',
+        '  - { by: process:nightly, at: 2026-06-23T02:00:00Z }',
+        '  - by: verifier/model-v1',
+        '    at: 2026-06-24T03:00:00Z',
+        'stale_after: 2099-01-01',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf', 'unverified.md'),
+      [
+        'type: Reference',
+        'description: okf-signal-order',
+        'stale_after: 2099-01-01',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf', 'human-outdated.md'),
+      [
+        'type: Reference',
+        'description: okf-signal-order',
+        'status: stable',
+        'generated: { by: wiki-soul/0.2, at: 2026-07-02T09:00:00Z }',
+        'verified: { by: human:reviewer, at: 2026-07-01T09:00:00Z }',
+        'stale_after: 2099-01-01',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf', 'stale.md'),
+      [
+        'type: Reference',
+        'description: okf-signal-order',
+        'status: stable',
+        'verified: { by: human:reviewer, at: 2026-06-25T09:00:00Z }',
+        'stale_after: 2026-07-25',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf', 'deprecated.md'),
+      [
+        'type: Reference',
+        'description: okf-signal-order',
+        'status: deprecated',
+        'verified: { by: human:reviewer, at: 2026-06-25T09:00:00Z }',
+        'stale_after: 2099-01-01',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf', 'nested-source.md'),
+      [
+        'type: Reference',
+        'description: Provenance fixture',
+        'sources:',
+        '  - id: nested-source',
+        '    resource: https://example.test/nested-source-needle',
+        '    title: Nested source needle',
+        '    author: human:source-owner',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf-parser', 'quoted-keys.md'),
+      [
+        'type: Reference',
+        'description: okf-parser-events',
+        'generated: { "by": wiki-soul/0.2, \'at\': 2026-07-02T09:00:00Z }',
+        'verified:',
+        '  - "by": human:quoted-reviewer',
+        "    'at': '2026-07-03T09:00:00Z'",
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf-parser', 'missing-pairs.md'),
+      [
+        'type: Reference',
+        'description: okf-parser-events',
+        'verified:',
+        '  - by: human:orphan-actor',
+        '  - at: 2026-07-04T09:00:00Z',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf-parser', 'malformed-events.md'),
+      [
+        'type: Reference',
+        'description: okf-parser-events',
+        'verified:',
+        '  - { by: human:bad-date, at: not-a-date }',
+        '  - { by: "", at: 2026-07-04T09:00:00Z }',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf-parser', 'spoof-string.md'),
+      [
+        'type: Reference',
+        'description: okf-parser-events',
+        'verified:',
+        '  - note: "spoof by: human:fake at: 2099-01-01T00:00:00Z"',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf-parser', 'invalid-calendar.md'),
+      [
+        'type: Reference',
+        'description: okf-parser-events',
+        'verified: { by: human:impossible-date, at: 2026-02-30T09:00:00Z }',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf-parser', 'generated-missing-by.md'),
+      [
+        'type: Reference',
+        'description: okf-parser-events',
+        'generated: { at: 2026-07-05T09:00:00Z }',
+        'verified: { by: process:valid-check, at: 2026-07-04T09:00:00Z }',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf-parser', 'actor-convention.md'),
+      [
+        'type: Reference',
+        'description: okf-parser-events',
+        'verified:',
+        '  - { by: process:valid-check, at: 2026-07-04T09:00:00Z }',
+        '  - { by: garbage, at: 2026-07-05T09:00:00Z }',
+      ].join('\n'),
+    );
+    writeConcept(
+      path.join(memoryRoot, 'bundles', 'okf-parser', 'invalid-structure.md'),
+      [
+        'type: Reference',
+        'description: [',
+        'marker: invalid-structure-term',
+      ].join('\n'),
+    );
 
     const stripe = queryMemory({
       memoryRoot,
@@ -914,6 +1691,122 @@ function runSelfTest() {
       'deterministic_limit',
     );
 
+    const okfSignalsResult = queryMemory({
+      memoryRoot,
+      projectId: currentProjectId,
+      allProjects: false,
+      limit: DEFAULT_LIMIT,
+      rawTerms: ['okf-signal-order'],
+      today: '2026-07-25',
+    });
+    const okfByName = Object.fromEntries(
+      okfSignalsResult.results.map((result) => [path.basename(result.path), result]),
+    );
+    assert(
+      okfByName['human-current.md'].trustTier === 'human-reviewed'
+      && okfByName['human-current.md'].lastVerifiedAt === '2026-06-25T09:00:00Z',
+      'verified_mapping_and_human_tier',
+    );
+    assert(
+      okfByName['machine-list.md'].trustTier === 'machine-confirmed'
+      && okfByName['machine-list.md'].lastVerifiedAt === '2026-06-24T03:00:00Z',
+      'verified_list_machine_tier_and_latest',
+    );
+    assert(
+      okfByName['human-current.md'].stale === false
+      && okfByName['stale.md'].stale === true,
+      'stale_after_fresh_and_stale',
+    );
+    assert(
+      okfByName['human-outdated.md'].verificationOutdated === true
+      && okfByName['human-current.md'].verificationOutdated === false,
+      'generated_newer_than_verification',
+    );
+    assert(
+      okfByName['human-current.md'].status === 'stable'
+      && okfByName['deprecated.md'].status === 'deprecated',
+      'status_default_and_deprecated',
+    );
+    assert(
+      okfSignalsResult.results.map((result) => path.basename(result.path)).join(',') === [
+        'human-current.md',
+        'machine-list.md',
+        'unverified.md',
+        'human-outdated.md',
+        'stale.md',
+        'deprecated.md',
+      ].join(','),
+      'okf_signal_order',
+    );
+
+    const nestedSource = queryMemory({
+      memoryRoot,
+      projectId: currentProjectId,
+      allProjects: false,
+      limit: DEFAULT_LIMIT,
+      rawTerms: ['nested-source-needle'],
+    });
+    assert(
+      nestedSource.count === 1
+      && nestedSource.results[0].matches.frontmatter[0].field === 'sources',
+      'nested_sources_searchable',
+    );
+
+    const parserEvents = queryMemory({
+      memoryRoot,
+      projectId: currentProjectId,
+      allProjects: false,
+      limit: DEFAULT_LIMIT,
+      rawTerms: ['okf-parser-events'],
+    });
+    const parserByName = Object.fromEntries(
+      parserEvents.results.map((result) => [path.basename(result.path), result]),
+    );
+    assert(
+      parserByName['quoted-keys.md'].trustTier === 'human-reviewed'
+      && parserByName['quoted-keys.md'].lastVerifiedAt === '2026-07-03T09:00:00Z',
+      'quoted_internal_keys',
+    );
+    assert(
+      parserByName['missing-pairs.md'].trustTier === 'unverified'
+      && !('lastVerifiedAt' in parserByName['missing-pairs.md']),
+      'verification_fields_must_share_event',
+    );
+    assert(
+      parserByName['malformed-events.md'].trustTier === 'unverified'
+      && !('lastVerifiedAt' in parserByName['malformed-events.md']),
+      'malformed_or_empty_verification_ignored',
+    );
+    assert(
+      parserByName['spoof-string.md'].trustTier === 'unverified'
+      && !('lastVerifiedAt' in parserByName['spoof-string.md']),
+      'mapping_text_does_not_spoof_event',
+    );
+    assert(
+      parserByName['invalid-calendar.md'].trustTier === 'unverified'
+      && !('lastVerifiedAt' in parserByName['invalid-calendar.md']),
+      'invalid_calendar_datetime',
+    );
+    assert(
+      parserByName['generated-missing-by.md'].trustTier === 'machine-confirmed'
+      && parserByName['generated-missing-by.md'].verificationOutdated === false,
+      'generated_requires_actor_and_datetime',
+    );
+    assert(
+      parserByName['actor-convention.md'].trustTier === 'machine-confirmed'
+      && parserByName['actor-convention.md'].lastVerifiedAt === '2026-07-04T09:00:00Z',
+      'actor_convention_rejects_garbage',
+    );
+
+    const invalidStructure = queryMemory({
+      memoryRoot,
+      projectId: currentProjectId,
+      allProjects: false,
+      limit: DEFAULT_LIMIT,
+      rawTerms: ['invalid-structure-term'],
+    });
+    assert(invalidStructure.count === 0, 'invalid_frontmatter_structure');
+
     const symlinkPath = path.join(memoryRoot, 'bundles', 'escape');
     try {
       fs.symlinkSync(temporaryRoot, symlinkPath, 'dir');
@@ -934,7 +1827,7 @@ function runSelfTest() {
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
   }
 
-  return { ok: true, tests: 19 };
+  return { ok: true, tests: 34 };
 }
 
 function helpText() {

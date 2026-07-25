@@ -30,7 +30,7 @@ Acceptance criteria:
 
 Verification:
 
-- Cross-checked against the agreed design and official OKF 0.1 specification.
+- Cross-checked against the agreed design and vendored OKF 0.2 specification.
 
 ### Slice 2: Universal installation
 
@@ -204,6 +204,9 @@ Acceptance criteria:
 - [x] `wiki-soul-query` searches global and current-project frontmatter by
       default, ranks deterministic metadata matches, and never searches or
       returns concept bodies.
+- [x] Query results derive trust tier, lifecycle, staleness, and
+      outdated-verification warnings while keeping relevance primary and
+      matching concepts visible.
 - [x] The canonical query helper is dependency-free source. The installer
       tests an existing compatible runtime, may generate a marked equivalent,
       and never installs a runtime without separate explicit approval.
@@ -226,6 +229,48 @@ Verification:
 - Installer, uninstaller, product contract, specification, roadmap, and README
   cross-checked for metadata-only query and explicit-ingestion boundaries.
 
+### Slice 10: Direct OKF 0.2 adoption
+
+Status: [x]
+
+Value: Make OKF 0.2 the native format for the complete Wiki Soul framework and
+every bundle created by installation.
+
+Acceptance criteria:
+
+- [x] Every autonomous bundle root declares `okf_version: "0.2"`.
+- [x] Managed writers emit truthful `generated: { by, at }` for every new or
+      meaningfully changed concept and explicit `status`.
+- [x] External provenance uses structured `sources`; per-claim attribution uses
+      footnotes keyed by stable source IDs.
+- [x] `verified` events use the actor convention and are written only after
+      real checks. Trust tiers remain derived, not stored.
+- [x] `stale_after` uses an evidence-backed absolute date. Staleness and
+      verification-outdated state are derived and surfaced.
+- [x] Objective source `author`, `usage_count`, `last_modified`, and
+      `usage_window` signals are preserved and validated without a subjective
+      credibility score.
+- [x] Attested Computation contracts, including runtime, parameters,
+      computation, executor, receipt shape, and deterministic attester
+      references, are preserved and validated without execution.
+- [x] Fresh installation creates the memory core, protocol, subject bundles,
+      and project bundles directly as OKF 0.2.
+- [x] Installation uses an immutable, checksummed local OKF 0.2 snapshot and
+      never depends on mutable upstream OKF state.
+- [x] Audit, repair, maintenance, and ingestion accept installed destinations
+      declaring OKF 0.2 and report other version states as conflicts.
+- [x] Installer, protocol, maintenance, query, ingestion, hooks, skills,
+      uninstall, examples, and product documentation share the same 0.2
+      contract.
+
+Verification:
+
+- Compared the complete repository contract against the vendored OKF 0.2
+  sections on provenance, trust, lifecycle, actor identity, versioning,
+  conformance, and Attested Computation.
+- Validated local Markdown links, YAML examples, query fixtures, and
+  passive-attestation security invariants.
+
 ## Discovered Follow-ups
 
 - Add adapters for Gemini CLI and other agents.
@@ -244,9 +289,11 @@ Verification:
   contract.
 - Native skill surfaces vary by agent and version. Installation must inspect
   current documented capabilities and retain the manual fallback.
+- Attested Computation execution protocols, receipt wire formats, attester ABI,
+  and sandboxing remain outside OKF 0.2 and Wiki Soul V1.
 
 ## Next Recommended Slice
 
-Live-test installation, `wiki-soul-query`, and `wiki-soul-ingest` from clean
-profiles and query, small, large, native-memory, sensitive-source, and
-interrupted-ingestion fixtures.
+Live-test fresh installation, query, and ingestion from clean profiles and
+small, large, native-memory, sensitive-source, stale, deprecated, trust-tier,
+attested, and interrupted-operation fixtures.

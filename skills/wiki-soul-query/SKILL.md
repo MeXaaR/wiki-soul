@@ -58,8 +58,55 @@ bodies. It ranks:
 - every other frontmatter field: weight 1;
 - each additional distinct matched term: coverage bonus 3.
 
+Relevance always wins. Results tied on score and matched-term coverage use
+these OKF v0.2 signals, in order:
+
+1. lifecycle: `stable`, then `draft`, then `deprecated`;
+2. freshness: not stale before stale, then current verification before a
+   verification made obsolete by a newer `generated.at`;
+3. trust: `human-reviewed`, then `machine-confirmed`, then `unverified`;
+4. current-project scope, global scope, other-project scope, then path.
+
+No lifecycle, freshness, or trust signal filters a result. `deprecated`,
+stale, unverified, and partially populated concepts remain searchable.
+
 Matching is deterministic, case-insensitive, accent-insensitive substring
 matching. It does not use fuzzy matching, stemming, embeddings, or body text.
+Every frontmatter field remains searchable, including nested v0.2 structures
+such as `sources`, `generated`, `verified`, `executor`, and `attester`.
+
+Each result carries these derived OKF v0.2 signals:
+
+- `status`: the declared lifecycle value, or `stable` when absent;
+- `stale`: true when today's local calendar date is on or after a valid
+  `stale_after`; `staleAfter` also reports the declared value when present;
+- `trustTier`: `unverified` without a verifier, `machine-confirmed` when all
+  verifiers are non-`human:` actors, or `human-reviewed` when any verifier is
+  a `human:` actor;
+- `lastVerifiedAt`: the latest valid ISO 8601 verification datetime, when
+  present;
+- `verificationOutdated`: true only when valid `generated.at` and
+  `lastVerifiedAt` values exist and generation is newer.
+
+The helper accepts both the single-mapping and list forms of `verified`.
+Quoted and unquoted `by` and `at` keys are accepted. Only events where the
+same mapping contains a valid OKF actor and a valid ISO 8601 calendar datetime
+in `at` contribute to `trustTier` or `lastVerifiedAt`. An actor must contain no
+whitespace or control character and be `human:<id>`, `process:<id>`, or exactly
+two non-empty `<producer>/<version>` segments. Malformed, incomplete,
+duplicate-key, invalid-actor, and scalar lookalike events are ignored.
+Likewise, `generated.at` affects `verificationOutdated` only when its own
+mapping also contains a valid `generated.by`.
+
+The dependency-free helper is not a complete YAML implementation. Before
+indexing, it conservatively validates the YAML subset used by Wiki Soul and
+OKF v0.2: top-level mappings, quoted or simple keys, scalar and flow values,
+indented mappings and lists, and block scalars. Unbalanced delimiters or
+quotes, tabs in indentation, invalid top-level lines, and indented content
+under a top-level scalar make the candidate ineligible. This structural check
+still stops at the closing frontmatter delimiter and never reads a body.
+Missing or malformed optional v0.2 fields alone do not invalidate an otherwise
+structurally valid concept.
 
 Use the returned `path`, `scope`, metadata, score, and matched fields to select
 the smallest useful set of concepts. Read only those concept files, normally
@@ -82,9 +129,16 @@ When no runnable helper exists:
 3. Read each candidate only from the opening `---` through the closing `---`.
    Do not read its body during candidate selection.
 4. Apply the same weights, normalization, coverage bonus, and deterministic
-   ordering as the canonical helper.
-5. Return compact metadata, choose the few useful concepts, then read those
-   bodies.
+   relevance ordering as the canonical helper.
+5. Derive the same v0.2 signals and tie-breakers. Treat a bare `verified`
+   mapping as one event, accept a verification list, default absent `status`
+   to `stable`, and compare `stale_after` with today's local calendar date.
+   Count only complete, valid, per-mapping `{by, at}` events and require both
+   fields in `generated`. Apply the same conservative structural validation.
+   Do not reject or hide stale, deprecated, unverified, or unknown
+   structurally valid frontmatter.
+6. Return compact metadata and derived signals, choose the few useful
+   concepts, then read those bodies.
 
 The manual fallback keeps the skill usable. Report that the fast path is
 unavailable; do not install a runtime during ordinary skill use.
@@ -102,8 +156,8 @@ During install, audit, repair, or update:
    Deno runtime.
 3. Otherwise, when Python 3 or PowerShell 7 exists, generate an equivalent
    dependency-free implementation in a temporary directory. It must implement
-   this CLI, scoring, JSON output, project identity algorithm, read boundaries,
-   and self-test contract.
+   this CLI, scoring, v0.2 signal derivation and tie-breakers, JSON output,
+   project identity algorithm, read boundaries, and self-test contract.
 4. Put this language-appropriate ownership text within the first 512 UTF-8
    bytes of generated source:
 
@@ -129,3 +183,10 @@ Tests must cover the required Wiki Soul project-ID vectors, current versus all
 project scope, accent and case normalization, quoted phrases, field weights,
 coverage bonus, unknown matching fields, deterministic limits, invalid
 frontmatter, symlink exclusion, and proof that body-only terms never match.
+They must also cover mapping and list forms of `verified`, human and machine
+trust tiers, stale and fresh concepts, generation newer than verification,
+absent and deprecated status, nested `sources`, and deterministic v0.2
+tie-break ordering. Parser fixtures must cover malformed and incomplete
+events, quoted internal keys, scalar spoof strings, invalid calendar
+datetimes, invalid actor conventions, `generated` without an actor, and
+structurally invalid frontmatter.
