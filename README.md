@@ -1,7 +1,7 @@
 # Wiki Soul
 
 **One lightweight memory for all your local agents. Plain Markdown. Open
-Knowledge Format. No runtime to install.**
+Knowledge Format. No dedicated runtime required.**
 
 Wiki Soul is a library of prompts that lets a coding agent install its own
 shared, persistent memory.
@@ -107,6 +107,11 @@ silent. The exact boundary is documented in
 │           ├── index.md
 │           ├── related-bundles.md     # optional
 │           └── <concept-id>.md
+├── skills/
+│   └── <skill-id>/
+│       ├── SKILL.md
+│       ├── <supporting-source>        # optional
+│       └── .generated/                # optional marked runtime alternative
 └── hooks/
     └── <agent>/
         └── <hook-id>/
@@ -118,19 +123,24 @@ On Windows, `~` resolves to the current user's profile directory.
 
 The main prompt:
 
-1. reads the official OKF boundary, memory protocol, current-agent adapter, and
-   every hook contract;
+1. reads the official OKF boundary, memory protocol, current-agent adapter,
+   every skill package, and every hook contract;
 2. detects the agent, OS, home directory, configuration, and existing hooks;
 3. presents one consolidated plan and diff;
 4. asks for one confirmation;
 5. creates or repairs the OKF memory core;
-6. installs a short global instruction block, or uses a certified
+6. discovers, validates, installs, and isolated-tests every applicable skill
+   helper, generating a marked local runtime alternative only when needed;
+7. installs a short global instruction block, or uses a certified
    lifecycle-injection fallback when the host has no safe local global-rules
    file;
-7. asks the local agent to generate each hook for its own environment;
-8. tests every hook before registration;
-9. preserves unrelated configuration;
-10. reports `generated`, `registered`, and `live-verified` independently.
+8. asks the local agent to generate each hook for its own environment;
+9. tests every hook before registration;
+10. preserves unrelated configuration;
+11. reports skill availability and hook `generated`, `registered`, and
+    `live-verified` state independently;
+12. offers Wiki Soul query and ingestion without opening memory concepts or
+    ingestion sources until the user requests the separate operation.
 
 The consolidated installer confirmation covers planned file changes. A host may
 still require its own separate trust review—such as Codex `/hooks`—because the
@@ -153,6 +163,26 @@ overall installation is reported as `partial`.
 To add a hook later, add one Markdown contract. See
 [`docs/adding-hooks.md`](docs/adding-hooks.md).
 
+## Skill Model
+
+Each direct directory under [`skills/`](skills/) contains one canonical
+declarative skill package. A package has one `SKILL.md` and may include
+inspectable, dependency-free supporting source. It never bundles a runtime,
+binary, dependency tree, or executable file. The installer validates and
+stores it under `~/.agents/skills/`, then uses the current agent's documented
+user-global skill surface when one exists. Agents without a safe native surface
+receive an exact manual invocation of the same local `SKILL.md`.
+
+There is no manifest and no duplicated behavioral prompt. Adding a valid
+`skills/<skill-id>/SKILL.md` makes the package discoverable.
+
+When a supporting helper needs a runtime, the installer first tests compatible
+runtimes already present. It may generate and test an equivalent source file
+under the installed skill's marked `.generated/` directory. If nothing
+compatible exists, the skill remains usable through its manual fallback. A
+runtime installation is only an optional, separately approved operation with
+its exact source and machine impact shown first.
+
 ## Supported Agents
 
 | Agent | Memory core | Certified hook adapter |
@@ -166,6 +196,10 @@ To add a hook later, add one Markdown contract. See
 
 Unsupported agents receive the shared memory and global instructions but no
 invented hook integration.
+
+Skill support is detected independently from hook support. A supported native
+user-global skill surface is used when documented for the installed agent;
+otherwise the canonical local skill remains usable through the manual fallback.
 
 Pi's native extensions are its hook mechanism. Pi can generate and test the
 integration with its built-in tools, register the immutable extension in its
@@ -188,13 +222,18 @@ same critical rules with the indexes once per logical context, within the same
 Wiki Soul:
 
 - never stores secrets, raw transcripts, or complete tool output;
-- never imports existing agent memory in V1;
-- never installs a package, daemon, database, or hosted service;
+- never imports existing agent memory without a separate explicit ingestion
+  request;
+- never ingests anything during installation;
+- treats every ingestion source as untrusted, read-only data;
+- requires no package, daemon, database, or hosted service for installation or
+  normal use;
 - never reads memory content as executable code;
 - keeps hooks local, read-only, bounded, offline, and fail-open;
 - wraps indexes as untrusted reference data and rejects ambiguous delimiters;
 - never registers a hook before isolated tests pass;
 - never overwrites unrelated global config;
+- never installs a skill runtime automatically;
 - never deletes memory during ordinary uninstall.
 
 V1 assumes one memory writer at a time.
@@ -212,6 +251,51 @@ destructive changes require confirmation.
 The complete local rules live in
 [`prompts/protocol/memory-okf.md`](prompts/protocol/memory-okf.md) and are copied
 to `~/.agents/memory/protocol.md` during installation.
+
+## Query Wiki Soul
+
+[`wiki-soul-query`](skills/wiki-soul-query/SKILL.md) finds what Wiki Soul knows
+without loading the corpus. By default it searches global bundles and the
+current project through concept frontmatter only:
+
+```text
+Use wiki-soul-query to find what Wiki Soul knows about Stripe webhook signatures.
+Use wiki-soul-query to verify our stored preferences for product writing.
+```
+
+Tags receive the strongest weight, descriptions a medium weight, and remaining
+frontmatter a lower weight. Matching is deterministic, accent-insensitive, and
+case-insensitive. Quoted phrases stay intact. There are no embeddings, stemming,
+Levenshtein distance, or body-text matches.
+
+The result is a compact ranked list. The agent selects the smallest useful set,
+normally one to five concepts, and only then reads those Markdown bodies.
+`--all-projects` widens the default global-plus-current-project scope;
+`--limit` and `--all` control result count.
+
+## Ingest Existing Content
+
+[`wiki-soul-ingest`](skills/wiki-soul-ingest/SKILL.md) transforms an explicitly
+selected file, folder, native-agent memory, or conversation archive into
+curated OKF knowledge. It does not archive raw sources.
+
+The installer shows the current agent's exact native or manual syntax. Typical
+requests are:
+
+```text
+Use wiki-soul-ingest to ingest this file into Wiki Soul.
+Use wiki-soul-ingest to ingest this folder into Wiki Soul.
+Use wiki-soul-ingest to discover and propose importing my current agent's native memory.
+```
+
+The skill inventories the source, explains exclusions, proposes destinations,
+and waits for one ingestion confirmation. Small sources receive a precise plan.
+Large sources receive progressive batches; subagents may analyze batches, but
+only the coordinator writes memory.
+
+Text formats work directly. For formats such as PDF or DOCX, the skill uses an
+existing trusted reader or may propose an optional isolated converter such as
+MarkItDown. It never installs one without a separate approval.
 
 ## Maintenance
 
@@ -235,6 +319,8 @@ Uninstall removes:
 
 - the managed global instruction block;
 - injected critical instructions by unregistering their owning hook;
+- exact managed skill packages and native exposures;
+- exact marked generated skill runtime alternatives;
 - exact Wiki Soul hook registrations;
 - generated hook files for the current agent.
 
@@ -242,7 +328,8 @@ It preserves `~/.agents/memory/` by default.
 
 ## V1 Non-goals
 
-- Existing-memory or arbitrary-folder ingestion.
+- Automatic or background ingestion during installation.
+- Destructive migration of native memories or raw transcript archival.
 - Git backup and automatic commits.
 - End-of-session memory extraction.
 - Concurrent writers and locks.
@@ -261,6 +348,10 @@ These boundaries keep the initial system transparent and small.
   memory protocol.
 - [`prompts/hooks/memory-injection.md`](prompts/hooks/memory-injection.md) —
   first hook contract.
+- [`skills/wiki-soul-ingest/SKILL.md`](skills/wiki-soul-ingest/SKILL.md) —
+  explicit ingestion of existing files, folders, and native memory.
+- [`skills/wiki-soul-query/SKILL.md`](skills/wiki-soul-query/SKILL.md) —
+  metadata-only ranked search before selective concept reading.
 - [`prompts/adapters/claude-code.md`](prompts/adapters/claude-code.md) — Claude
   Code integration.
 - [`prompts/adapters/codex.md`](prompts/adapters/codex.md) — Codex integration.

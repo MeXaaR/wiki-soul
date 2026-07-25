@@ -28,8 +28,11 @@ service, or network access.
 - Make global knowledge reusable after the project that produced it is closed.
 - Keep project context separate while routing it to relevant global knowledge.
 - Load only small indexes automatically and retrieve concepts on demand.
+- Query concept metadata before loading the few relevant concept bodies.
 - Let agents improve memory during normal work without capturing chat history.
 - Add agent hooks through behavioral specifications rather than shipped code.
+- Install declarative skills from one canonical, agent-portable source.
+- Curate explicitly selected files, folders, or native memories into bundles.
 - Update, repair, or uninstall integrations without damaging existing config.
 
 ## Scope
@@ -47,16 +50,23 @@ service, or network access.
 - Claude Code, Codex, Cursor, Pi, and OpenCode adapters.
 - macOS, Linux, and Windows.
 - Generated, registered, and live-verified hook states.
+- Manifest-free discovery and user-global installation of declarative skills.
+- Deterministic, metadata-only Wiki Soul search with a portable manual fallback.
+- Inspectable, dependency-free skill helper source and safely generated local
+  runtime alternatives when needed.
+- Explicit, planned ingestion of files, folders, and native agent memory.
 - Targeted memory reorganization.
 - Safe uninstall that preserves memory.
 
 ### Out
 
-- Importing existing Claude, Codex, or third-party memories.
-- General folder ingestion.
+- Automatic ingestion during installation.
+- Destructive migration or removal of native agent memory.
+- Raw conversation or transcript archival.
 - Git initialization, remote backup, or automatic commits.
 - Automatic end-of-session extraction.
-- A CLI, MCP server, package, daemon, vector database, or hosted service.
+- A standalone general-purpose CLI, MCP server, package, daemon, vector
+  database, or hosted service.
 - Concurrent memory writers.
 - Certified hooks for agents other than Claude Code, Codex, Cursor, Pi, and
   OpenCode in V1.
@@ -67,34 +77,45 @@ service, or network access.
 ### Main Flow
 
 1. The user gives the repository URL to a local agent.
-2. The agent reads the main installer, protocol, its adapter, and every hook
-   contract.
+2. The agent reads the main installer, protocol, its adapter, every hook
+   contract, and every skill package.
 3. The agent detects its host and operating system.
 4. It inspects existing global configuration and presents one complete plan.
 5. The user confirms once.
-6. The agent creates or updates memory, instructions, and hooks.
-7. Every hook is tested before registration.
-8. The agent reports exact per-hook and overall status.
+6. The agent creates or updates memory, skills, instructions, and hooks.
+7. Every skill is validated, every skill helper is isolated-tested when
+   runnable, and every hook is tested before activation.
+8. The agent reports exact per-skill, per-hook, and overall status.
+9. It offers Wiki Soul query, ingestion, and non-destructive native-memory
+   import without inspecting any concept body or ingestion source until the
+   user requests that separate operation.
 
 ### Existing Installation
 
 - The same prompt acts as installer, auditor, repairer, and updater from
   `main`.
 - Managed blocks are idempotent and never duplicated.
-- Existing unrelated instructions and hooks are preserved.
+- Managed skill packages are updated in place only when ownership and source
+  history are unambiguous.
+- Existing unrelated instructions, skills, and hooks are preserved.
 - Conflicts stop the affected change and are reported.
 
 ### Error State
 
-- Memory and hook failures are fail-open.
+- Skill and hook failures are fail-open.
+- A failed skill stays unavailable while other conforming components continue.
 - A failed hook stays inactive.
-- Other conforming hooks may activate independently.
+- Other conforming skills and hooks may activate independently.
 - Partial installation is reported as `partial`, never as complete.
 
 ## Technical Requirements
 
 - Repository contents are Markdown-first; hook implementations are generated
   locally.
+- Skills are declarative packages with one canonical `SKILL.md`. A package MAY
+  include inspectable, dependency-free, non-executable helper source, but no
+  runtime, binary, dependency tree, or ingestion runtime ships with the
+  repository.
 - Official OKF is normative. Wiki Soul conventions must remain compatible
   and must be labeled as conventions.
 - Hook code is local, read-only, bounded, offline, and least-privilege.
@@ -113,6 +134,14 @@ service, or network access.
 - Never execute memory content.
 - Hooks do not read transcripts or make network calls.
 - Global configuration changes require a displayed plan and one confirmation.
+- Ingestion requires its own displayed plan and explicit confirmation.
+- Ingestion sources are read-only and their contents are treated as untrusted
+  data.
+- Optional document converters require separate approval and isolated or
+  temporary installation when practical.
+- A skill runtime is never installed automatically. The installer MAY propose
+  one only with its exact source, command, destination, network and machine
+  impact, then wait for separate explicit approval.
 - Hook trust or approval required by the host remains a user-controlled step.
 
 ## Acceptance Criteria
@@ -121,6 +150,7 @@ service, or network access.
       `README.md`.
 - [x] An agent can complete installation from the repository URL alone.
 - [x] The universal installer discovers every Markdown hook contract.
+- [x] The universal installer discovers every canonical skill package.
 - [x] Claude Code, Codex, Cursor, Pi, and OpenCode have separate, current adapter
       instructions.
 - [x] Every autonomous bundle created by a fresh install conforms to OKF 0.1;
@@ -129,7 +159,15 @@ service, or network access.
 - [x] A hook cannot be registered until its isolated tests pass.
 - [x] Reports distinguish `generated`, `registered`, and `live-verified`.
 - [x] Runtime failures do not block normal agent work.
+- [x] `wiki-soul-query` searches tags, descriptions, and remaining frontmatter
+      without loading concept bodies, then lets the agent read only selected
+      concepts.
+- [x] The query fast path is dependency-free and isolated-tested; when no
+      compatible local runtime exists, installation retains a documented
+      manual fallback and never installs a runtime automatically.
 - [x] Uninstall removes integration assets and preserves memory by default.
+- [x] Ingestion writes only curated, protocol-conforming knowledge and never
+      modifies its sources.
 - [x] All local Markdown links in the repository resolve.
 
 ## Assumptions
@@ -142,8 +180,8 @@ service, or network access.
 
 ## Open Questions
 
-- None blocking V1. Additional adapters, ingestion, backup, and concurrency are
-  explicitly deferred.
+- None blocking V1. Additional adapters, backup, and concurrency are explicitly
+  deferred.
 
 [llm-wiki]: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
 [okf]: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md

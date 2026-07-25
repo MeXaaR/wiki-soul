@@ -25,9 +25,10 @@ The persistent, interlinked Markdown knowledge artifact is inspired by the LLM
 Wiki pattern. LLM Wiki is design inspiration, not a normative dependency. OKF
 remains authoritative for the stored knowledge format.
 
-Wiki Soul is a prompt library. It does not ship a runtime implementation.
-The installing agent creates local files and generates host-compatible hooks
-from behavioral contracts.
+Wiki Soul is a prompt library. It does not ship a dedicated runtime, package,
+daemon, or service. A skill MAY include small inspectable helper source under
+the contract below. The installing agent creates local files and generates
+host-compatible hooks from behavioral contracts.
 
 ## 2. Normative Language
 
@@ -61,16 +62,22 @@ the equivalent user-profile directory.
 │           ├── log.md                 # optional
 │           ├── related-bundles.md     # created when first needed
 │           └── <concept-id>.md
-└── hooks/
+├── hooks/
     ├── claude-code/
     ├── codex/
     ├── cursor/
     ├── pi/
     ├── opencode/
     └── <future-agent>/
+└── skills/
+    └── <skill-id>/
+        ├── SKILL.md
+        ├── <supporting-files>          # optional canonical source
+        └── .generated/                 # optional marked local alternative
 ```
 
 No hook source code belongs inside an OKF bundle.
+No skill file belongs inside an OKF bundle.
 
 ## 4. Bundle Model
 
@@ -237,6 +244,43 @@ Example:
 ```
 
 This is both human-readable and usable for agent routing without extending OKF.
+
+### 9.1 Metadata-only concept query
+
+`wiki-soul-query` provides deterministic candidate discovery before selective
+concept reading.
+
+The query stage MUST:
+
+- search global bundles and the current project bundle by default;
+- search every project bundle only with explicit `--all-projects`;
+- honor an explicit `--project-id <id>` before deriving identity through the
+  Wiki Soul project identity algorithm;
+- inspect only non-reserved concept documents with valid frontmatter and a
+  non-empty `type`;
+- search `tags`, `description`, and all remaining frontmatter fields;
+- never search, return, or place Markdown bodies in context;
+- exclude `index.md`, `log.md`, and symlinks;
+- normalize case and accents, then use deterministic substring matching while
+  preserving quoted phrases as single terms;
+- use no embeddings, stemming, edit distance, or other fuzzy expansion.
+
+Scoring is the sum of each matched distinct query term in each matching field:
+
+- `tags`: 10;
+- `description`: 5;
+- every other frontmatter field: 1;
+- each distinct matched term after the first: coverage bonus 3.
+
+Results MUST be deterministic and sorted by score, term coverage, current
+project before global before other projects, then normalized path. The default
+limit is 20. `--limit <count>` changes it and `--all` removes it.
+
+Each result contains `path`, `scope`, `type`, optional `title`, optional
+`description`, optional `tags`, `score`, and matched terms and fields. Unknown
+frontmatter fields appear only when they matched. The querying agent then
+selects and reads only the smallest useful set of concept bodies, normally one
+to five.
 
 ## 10. Memory Write Policy
 
@@ -432,7 +476,82 @@ Hooks activate independently. A failing hook stays inactive while conforming
 hooks may proceed. The final installation state is `partial` when any expected
 hook is not live-verified.
 
-## 17. Injection Lifecycle
+## 17. Skill Contract
+
+Declarative agent skills are stored as one package per direct child of the
+repository `skills/` directory. Each package:
+
+- MUST contain `SKILL.md`;
+- MUST use a stable lowercase ASCII `skill-id` containing only letters, digits,
+  and hyphens;
+- MUST declare matching `name` and a non-empty `description` in YAML
+  frontmatter;
+- MUST carry
+  `WIKI_SOUL_MANAGED_SKILL_V1 skill=<skill-id>` within the first 1,024 UTF-8
+  bytes of `SKILL.md`;
+- MAY contain supporting metadata, references, or assets;
+- MAY contain dependency-free, inspectable UTF-8 helper source that carries
+  `WIKI_SOUL_MANAGED_SKILL_ASSET_V1 skill=<skill-id>` within its first 512
+  UTF-8 bytes;
+- MUST NOT contain an executable bit, opaque binary, bundled runtime,
+  dependency tree, or dependency installer.
+
+The installer discovers every direct `skills/<skill-id>/SKILL.md`. There is no
+manifest. It validates the complete package, rejects unsafe links or paths, and
+installs the canonical package under
+`~/.agents/skills/<skill-id>/`.
+
+A skill helper MAY define an isolated self-test and a manual fallback. During
+installation, audit, repair, or update the installer:
+
+1. tests the canonical source with a compatible runtime already present;
+2. otherwise MAY generate an equivalent dependency-free implementation for a
+   compatible general runtime already present;
+3. MUST test that implementation against the canonical behavior before use;
+4. MUST place it only under
+   `~/.agents/skills/<skill-id>/.generated/`;
+5. MUST include
+   `WIKI_SOUL_GENERATED_SKILL_RUNTIME_V1 skill=<skill-id>` within the first 512
+   UTF-8 bytes of generated source;
+6. MUST preserve unmarked or ambiguously owned generated content as a conflict;
+7. MUST NOT install a runtime automatically.
+
+Generated alternatives are local installation assets, not canonical package
+source. Exact canonical comparison ignores only a valid, marked `.generated/`
+tree. Audit, repair, update, and uninstall MAY replace or remove generated
+source only when every affected file carries the exact matching marker and no
+unrelated content would be changed.
+
+If no compatible runtime exists, the installer MAY offer one exact optional
+runtime installation plan. It MUST identify source, command, destination,
+network access, and machine impact, then wait for separate explicit approval.
+If the user declines or the install fails, the skill's documented manual
+fallback remains the supported path.
+
+When the current host has a documented, safe, user-global native skill surface,
+the installer exposes the canonical package through that surface. A generated
+native adaptation may locate or load the canonical package but MUST NOT
+duplicate its behavioral instructions. When no such surface exists, the
+installer keeps the canonical local package and provides an exact manual prompt
+that tells the agent to read its `SKILL.md`.
+
+Skill installation, audit, repair, update, and uninstall are idempotent.
+Unrelated skills are preserved. A package that differs from both current and
+provable prior canonical source is a local-edit conflict and is never replaced
+silently.
+
+Skill failures are isolated. Other conforming skills, hooks, and the memory core
+continue; the overall installation becomes `partial`.
+
+Installation never invokes an installed skill against user data. It MAY run a
+declared helper self-test only against isolated fixtures, without opening the
+real memory or any ingestion source. In particular, installation MUST NOT read
+or ingest native memories, files, folders, or conversations. After successful
+installation it MAY offer `wiki-soul-query` and `wiki-soul-ingest`, explain the
+current host's native or manual invocation, and wait for a separate explicit
+operation.
+
+## 18. Injection Lifecycle
 
 Memory injection occurs once per new logical context:
 
@@ -461,7 +580,7 @@ Runtime failure is fail-open:
 - inject no ambiguous partial memory;
 - recommend rerunning the installer for repair.
 
-## 18. Hook Security
+## 19. Hook Security
 
 Generated hooks MUST:
 
@@ -481,7 +600,7 @@ Generated hooks MUST:
 
 A hook is not registered until all isolated functional and security tests pass.
 
-## 19. Installation State
+## 20. Installation State
 
 Per hook:
 
@@ -494,18 +613,32 @@ Per hook:
 - `unsupported`: an outcome, not a successful state; all three fields remain
   no or not applicable.
 
+Per skill:
+
+- `installed`: yes only when the complete canonical package exists at its
+  managed local path and passes structural validation;
+- `native-loaded`: yes only when the current host recognizes that exact
+  package through a documented user-global skill surface;
+- `manual`: ready only when native loading is unavailable and the report gives
+  an exact reusable prompt pointing to the installed canonical `SKILL.md`;
+- `query-fast-path`: `canonical`, `generated`, or `unavailable` when a skill
+  declares such a helper; `unavailable` does not fail a valid manual fallback;
+- `failed`: the package stays unavailable while other components continue.
+
 Overall:
 
 - `complete`: memory core works, critical instructions in the selected mode are
-  proven loaded, and every discovered hook is live-verified;
+  proven loaded, every skill is either native-loaded or has a ready manual
+  fallback, and every discovered hook is live-verified;
 - `partial`: memory works, but instructions are not yet proven loaded or at
-  least one hook is pending, unsupported, or failed;
+  least one skill or hook is pending, unsupported without its required
+  fallback, or failed;
 - `failed`: the memory core or critical global instructions could not be safely
   installed.
 
 The installer MUST NOT call a hook active before live verification.
 
-## 20. Installation and Update
+## 21. Installation and Update
 
 The repository `main` branch is the live source. There are no releases or
 separate version registry.
@@ -525,6 +658,10 @@ Installation is idempotent:
 
 - managed instruction blocks are replaced in place, not duplicated;
 - injected instruction mode creates no duplicate persistent rule surface;
+- managed skill packages are discovered by stable IDs and never overwrite an
+  ambiguous local package;
+- marked generated skill runtime alternatives are replaced in place without
+  changing canonical source or unmarked content;
 - hook entries are identified by exact content-addressed deployment paths;
 - unrelated configuration is preserved;
 - conflicting memory hooks stop the affected installation;
@@ -533,36 +670,40 @@ Installation is idempotent:
 Normal runtime is fully local and offline. The repository is consulted only
 during install, audit, repair, or update.
 
-## 21. Unsupported Agents
+## 22. Unsupported Agents
 
 An agent without a certified adapter still installs:
 
 - the OKF memory core;
 - the protected local protocol;
+- each canonical skill package with a documented manual invocation;
 - a short global instruction block through a safely identified native surface.
 
 It MUST NOT invent or register an uncertified hook. It reports that automatic
 injection is unavailable and uses instruction-driven index loading.
 
-## 22. Uninstall
+## 23. Uninstall
 
 Uninstall removes only:
 
 - the managed global instruction block when file mode was used;
+- exact native skill exposures and canonical skill packages carrying matching
+  Wiki Soul ownership markers;
+- exact generated skill runtime alternatives carrying matching ownership
+  markers;
 - matching native hook registrations;
 - generated scripts under `~/.agents/hooks/<agent>/`.
 
 It preserves:
 
-- unrelated instructions and hooks;
+- unrelated instructions, skills, and hooks;
 - the full `~/.agents/memory/` tree by default.
 
 Memory deletion is a separate destructive action requiring explicit
 confirmation and a clear irreversibility warning.
 
-## 23. Deferred Work
+## 24. Deferred Work
 
-- Existing-memory and folder ingestion.
 - Automated end-of-session extraction.
 - Git backup and remote sync.
 - Concurrent writers and locking.

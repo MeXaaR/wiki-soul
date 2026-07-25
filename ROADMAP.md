@@ -3,8 +3,8 @@
 ## Current Objective
 
 Ship a complete V1 prompt library that installs and operates lightweight,
-shared OKF memory through Claude Code, Codex, Cursor, Pi, OpenCode, and a
-generic fallback.
+shared OKF memory and declarative skills through Claude Code, Codex, Cursor,
+Pi, OpenCode, and a generic fallback.
 
 ## Status Legend
 
@@ -188,10 +188,47 @@ Verification:
   adapter still requires installation-time and selected-surface verification
   because the required hook remains experimental.
 
+### Slice 9: Declarative skills, query, and ingestion
+
+Status: [x]
+
+Value: Install portable agent skills, query Wiki Soul without loading the
+corpus, and curate existing content on explicit request.
+
+Acceptance criteria:
+
+- [x] Skill discovery is directory-based and manifest-free.
+- [x] One canonical package is installed under `~/.agents/skills/`.
+- [x] Native skill exposure is used only through a documented user-global
+      surface; other agents receive a manual fallback.
+- [x] `wiki-soul-query` searches global and current-project frontmatter by
+      default, ranks deterministic metadata matches, and never searches or
+      returns concept bodies.
+- [x] The canonical query helper is dependency-free source. The installer
+      tests an existing compatible runtime, may generate a marked equivalent,
+      and never installs a runtime without separate explicit approval.
+- [x] Generated skill runtimes are auditable, replaceable, and removable only
+      through exact ownership markers.
+- [x] `wiki-soul-ingest` handles selected files, folders, native memories, and
+      explicitly selected conversation sources.
+- [x] Every ingestion inventories and plans before writing.
+- [x] Large ingestions support progressive batches and analysis-only
+      subagents while preserving one memory writer.
+- [x] Sources remain read-only; secrets, raw transcripts, and raw tool output
+      never enter memory.
+- [x] Skill audit, repair, update, uninstall, partial failure, and final
+      installation offer are specified.
+
+Verification:
+
+- Canonical skill metadata, helper source, ownership markers, and query
+  self-tests validated.
+- Installer, uninstaller, product contract, specification, roadmap, and README
+  cross-checked for metadata-only query and explicit-ingestion boundaries.
+
 ## Discovered Follow-ups
 
 - Add adapters for Gemini CLI and other agents.
-- Create a separate ingestion skill for existing memories and arbitrary folders.
 - Add optional Git backup hook.
 - Add a concurrency protocol only if real usage requires multiple writers.
 
@@ -205,9 +242,11 @@ Verification:
 - `main` is mutable. The installer must audit behavior on every rerun.
 - Generated hook code is nondeterministic. Acceptance tests are the stable
   contract.
+- Native skill surfaces vary by agent and version. Installation must inspect
+  current documented capabilities and retain the manual fallback.
 
 ## Next Recommended Slice
 
-Cursor, Pi, and OpenCode support are specified. Next work should live-test
-installation from clean profiles, then start only from a real usage need:
-another agent adapter or the separate ingestion skill.
+Live-test installation, `wiki-soul-query`, and `wiki-soul-ingest` from clean
+profiles and query, small, large, native-memory, sensitive-source, and
+interrupted-ingestion fixtures.

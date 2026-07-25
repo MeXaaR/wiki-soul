@@ -340,10 +340,12 @@ failed hook makes the overall installation `partial`; it must not disable
 another conforming hook.
 
 Use the main installer's overall status rules: `complete` only when the
-instruction block is proven loaded and all discovered hooks are live-verified;
-`partial` when memory works but instructions are not proven loaded or any hook
-is pending, unsupported, or failed; and `failed` only when the memory core or
-critical global instructions could not be installed safely.
+instruction block is proven loaded, every discovered skill is native-loaded or
+has a ready manual fallback, and all discovered hooks are live-verified;
+`partial` when memory works but instructions are not proven loaded or any skill
+or hook is pending, unsupported without its required fallback, or failed; and
+`failed` only when the memory core or critical global instructions could not be
+installed safely.
 
 ## Official references
 

@@ -266,8 +266,11 @@ new Codex session is required, and give one precise verification action.
 
 Report overall installation as:
 
-- `complete` only when instructions are live-loaded and every requested hook is
+- `complete` only when instructions are live-loaded, every discovered skill is
+  native-loaded or has a ready manual fallback, and every requested hook is
   `live-verified`;
+- `partial` when a discovered skill is pending, failed, or unsupported without
+  its required manual fallback;
 - `partial` when at least one hook is usable but another is failed, awaiting
   trust, awaiting restart, or not live-verified;
 - `partial` when memory core and global instructions work but no hook was

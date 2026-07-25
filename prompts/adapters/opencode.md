@@ -444,6 +444,10 @@ Status meanings:
 If a real compaction or enabled subagent cannot be exercised, keep
 `live-verified: no` and the overall installation `partial`.
 
+The main installer also requires every discovered skill to be native-loaded or
+have a ready manual fallback. A pending or failed skill makes the overall
+installation `partial`.
+
 ## Failure, update, and removal
 
 Runtime failure must:

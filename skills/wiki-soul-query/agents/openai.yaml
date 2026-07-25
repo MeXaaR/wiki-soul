@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wiki Soul Query"
+  short_description: "Search Wiki Soul memory efficiently"
+  default_prompt: "Use $wiki-soul-query to find what Wiki Soul knows about this topic."

@@ -309,6 +309,10 @@ Status meanings:
 If a real subagent or compaction cannot be exercised, keep `live-verified: no`
 and the overall result `partial`. Never call the hook active early.
 
+The main installer also requires every discovered skill to be native-loaded or
+have a ready manual fallback. A pending or failed skill makes the overall
+result `partial`.
+
 In injected instruction mode:
 
 - a safely registered hook awaiting live proof is `partial`;

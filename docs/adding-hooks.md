@@ -60,9 +60,10 @@ One failed or unsupported hook does not disable conforming hooks.
 
 The overall install is:
 
-- `complete` when every discovered hook is live-verified;
-- `partial` when the memory core works but any hook is pending, failed, or
-  unsupported;
+- `complete` when every discovered skill satisfies the main installer and every
+  discovered hook is live-verified;
+- `partial` when the memory core works but any skill or hook is pending, failed,
+  or unsupported without its required fallback;
 - `failed` when the memory core or critical instructions cannot be installed
   safely.
 

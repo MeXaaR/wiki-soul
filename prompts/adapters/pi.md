@@ -426,6 +426,10 @@ If `/reload`, a new prompt, compaction, or a child-agent invocation still needs
 user interaction, report one exact next action and keep the installation
 `partial`. Never infer live execution from settings or source files.
 
+The main installer also requires every discovered skill to be native-loaded or
+have a ready manual fallback. A pending or failed skill makes the overall
+installation `partial`.
+
 ## Failure, update, and removal
 
 Runtime failure must:

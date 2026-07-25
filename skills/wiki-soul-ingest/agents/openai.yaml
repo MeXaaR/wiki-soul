@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wiki Soul Ingest"
+  short_description: "Ingest files into Wiki Soul memory"
+  default_prompt: "Use $wiki-soul-ingest to ingest this file or folder into Wiki Soul memory."

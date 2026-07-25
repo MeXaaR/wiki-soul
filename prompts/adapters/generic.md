@@ -60,6 +60,7 @@ Report:
 
 - memory core: installed, unchanged, repaired, or failed;
 - global instructions: installed, unchanged, or unavailable;
+- skills: use the main installer's native-loaded or manual-fallback status;
 - automatic injection: unsupported;
 - overall installation: `partial` when the memory core works without a
   certified hook.

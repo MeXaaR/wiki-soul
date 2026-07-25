@@ -6,8 +6,9 @@ Work autonomously after the user approves one consolidated plan. Ask again only
 when a real conflict, destructive action, or administrative restriction changes
 the requested outcome.
 
-Do not install a package. Do not clone this repository permanently. Do not add
-files to client projects.
+Do not install a Wiki Soul package. Never install a skill runtime without the
+separate explicit approval defined below. Do not clone this repository
+permanently. Do not add files to client projects.
 
 ## 1. Read the Complete Contract
 
@@ -18,7 +19,10 @@ Before inspecting or changing user configuration, read completely:
 3. [`../docs/okf-compatibility.md`](../docs/okf-compatibility.md);
 4. [`protocol/memory-okf.md`](protocol/memory-okf.md);
 5. every `.md` file directly under [`hooks/`](hooks/);
-6. the matching adapter:
+6. every `SKILL.md` directly under a child of the repository
+   [`../skills/`](../skills/) directory, and inventory every other file in each
+   discovered skill package;
+7. the matching adapter:
    - Claude Code → [`adapters/claude-code.md`](adapters/claude-code.md);
    - Codex → [`adapters/codex.md`](adapters/codex.md);
    - Cursor → [`adapters/cursor.md`](adapters/cursor.md);
@@ -26,8 +30,9 @@ Before inspecting or changing user configuration, read completely:
    - OpenCode → [`adapters/opencode.md`](adapters/opencode.md);
    - any other host → [`adapters/generic.md`](adapters/generic.md).
 
-Do not rely on a partial fetch or this file alone. The hook directory is
-manifest-free: every direct `.md` file is an installable hook contract.
+Do not rely on a partial fetch or this file alone. Hook and skill discovery are
+manifest-free: every direct hook `.md` file is an installable hook contract and
+every direct `skills/<skill-id>/SKILL.md` defines an installable skill package.
 
 The official OKF specification is normative. If current official OKF or
 official host documentation conflicts materially with this repository, stop
@@ -43,9 +48,11 @@ Determine without modifying:
 - active user-global instruction surface, or the adapter's explicitly
   authorized lifecycle-injection fallback when no safe local surface exists;
 - active user-global hook configuration surfaces;
+- active, documented user-global native skill surfaces;
 - available local runtimes and shells;
 - administrative or managed-policy restrictions;
-- existing Wiki Soul markers, registrations, and generated assets;
+- existing Wiki Soul instruction, skill, hook, registration, and generated
+  asset markers;
 - competing memory instructions or injection hooks;
 - the caller's repository root and Git remote, captured before fetching or
   opening a temporary Wiki Soul checkout.
@@ -61,6 +68,7 @@ Resolve paths natively:
 ```text
 Memory: <home>/.agents/memory/
 Hooks:  <home>/.agents/hooks/<agent>/
+Skills: <home>/.agents/skills/
 ```
 
 Do not assume Bash, Python, Node.js, PowerShell 7, `jq`, or another optional
@@ -80,13 +88,14 @@ Do not maintain a separate version file or installation manifest.
 Identify managed elements through:
 
 - exact instruction markers;
+- exact skill ownership markers and native skill exposures;
 - generated hook source markers;
 - exact native registration commands pointing to content-addressed
   deployments.
 
 On rerun:
 
-- leave conforming memory and hook implementations unchanged;
+- leave conforming memory, skill packages, and hook implementations unchanged;
 - replace the managed instruction block in place when its canonical content
   changed;
 - regenerate only hooks that fail the current contract;
@@ -99,8 +108,11 @@ Read before writing:
 
 - `<home>/.agents/memory/`;
 - `<home>/.agents/hooks/<agent>/`;
+- `<home>/.agents/skills/` and each discovered skill's exact candidate target;
 - every candidate global instruction file named by the adapter, including
   inactive precedence alternatives that can become active later;
+- the current host's documented native user-global skill inventory, without
+  reading unrelated skill bodies beyond what collision detection requires;
 - the resolved active-hook inventory across every accessible host scope, while
   modifying only the adapter-authorized user source;
 - policy and trust state relevant to hooks.
@@ -108,7 +120,8 @@ Read before writing:
 Rules:
 
 - parse structured configuration before proposing a merge;
-- preserve unrelated keys, arrays, comments when practical, and instructions;
+- preserve unrelated keys, arrays, comments, instructions, and skills when
+  practical;
 - if one managed marker is missing, duplicated, or overlapping, report a
   conflict rather than guessing;
 - if another hook injects equivalent memory context, stop the affected hook
@@ -125,6 +138,10 @@ Before any global modification, show:
 - every file to create or modify;
 - proposed managed instruction diff, or the exact injected instruction section
   and why the adapter requires that mode;
+- every discovered skill package, canonical target, native exposure or manual
+  fallback, structural checks, collision state, helper source, compatible
+  runtime path, planned self-tests, and marked generated destination when
+  applicable;
 - every discovered hook contract;
 - generated implementation target for each hook;
 - native lifecycle events and configuration source;
@@ -141,6 +158,8 @@ contract. Ask again only for:
 
 - a newly discovered conflict requiring a user choice;
 - a destructive action;
+- an optional skill runtime installation after showing its exact source,
+  command, destination, network access, and machine impact;
 - an administrative restriction requiring scope change.
 
 ## 6. Install or Repair the Memory Core
@@ -152,6 +171,7 @@ Create directories when absent:
 <home>/.agents/memory/bundles/
 <home>/.agents/memory/projects/
 <home>/.agents/hooks/<agent>/
+<home>/.agents/skills/
 ```
 
 Never replace an existing memory tree.
@@ -289,7 +309,104 @@ For `injected` mode:
 Only a certified adapter may select `injected` mode. The generic adapter must
 still require a safely identified native global instruction surface.
 
-## 8. Generate and Test Every Hook
+## 8. Install or Repair Every Skill
+
+For every direct `skills/<skill-id>/SKILL.md`:
+
+1. Validate that `<skill-id>` uses lowercase ASCII letters, digits, and
+   hyphens; `SKILL.md` begins with parseable YAML frontmatter; `name` matches
+   `<skill-id>`; `description` is non-empty; and no unexpected frontmatter key
+   changes the canonical contract.
+2. Require this ownership marker within the first 1,024 UTF-8 bytes:
+
+   ```text
+   WIKI_SOUL_MANAGED_SKILL_V1 skill=<skill-id>
+   ```
+
+3. Inventory the full package. Reject absolute paths, traversal, symlinks that
+   escape the package, executable bits, opaque binaries, bundled runtimes,
+   dependency trees, dependency installers, and duplicate skill names.
+   Dependency-free, inspectable UTF-8 helper source is allowed only when it
+   carries this ownership marker within its first 512 UTF-8 bytes:
+
+   ```text
+   WIKI_SOUL_MANAGED_SKILL_ASSET_V1 skill=<skill-id>
+   ```
+
+4. Use `<home>/.agents/skills/<skill-id>/` as the canonical managed target.
+   Copy the complete package exactly; do not generate behavioral prose inside
+   its canonical files. A valid marked `.generated/` tree is a separate local
+   installation asset and is excluded from canonical source comparison.
+5. If the target is absent, create it. If it exactly matches current canonical
+   source, leave it unchanged. If it differs, replace it only when repository
+   history proves it is an earlier canonical package and the replacement
+   appeared in the approved plan. Otherwise report a local-edit or ownership
+   conflict and preserve it.
+6. Inspect current official host documentation and the installed agent's
+   capabilities for a safe user-global native skill surface:
+   - when that surface discovers the canonical target directly, use it;
+   - when it supports a documented registration, link, or minimal adapter,
+     expose the canonical target without duplicating workflow instructions;
+   - when no safe native surface exists, install no invented integration and
+     prepare an exact manual prompt that directs the agent to read the
+     canonical local `SKILL.md`.
+7. Preserve unrelated skill packages, registries, links, and settings.
+8. Validate the installed package from its production path. When native
+   discovery exists, verify that the host resolves the expected skill ID
+   without invoking the skill or opening any ingestion source.
+
+For a skill that declares a helper runtime contract:
+
+1. Test the canonical source in an isolated temporary fixture with its
+   preferred compatible runtime when that runtime is already installed.
+2. If that runtime is absent, test the same source with another already
+   installed compatible runtime named by the skill, such as Bun or Deno.
+3. Otherwise prefer an already installed general runtime such as Python 3 or
+   PowerShell 7 and generate the smallest dependency-free equivalent in a
+   temporary directory. Other languages are allowed only when their runtime is
+   already present and the complete contract can be tested.
+4. Put this language-appropriate ownership text within the first 512 UTF-8
+   bytes of every generated source file:
+
+   ```text
+   WIKI_SOUL_GENERATED_SKILL_RUNTIME_V1 skill=<skill-id>
+   ```
+
+5. Run the skill's complete required fixture suite. Tests MUST NOT open the real
+   memory, an ingestion source, native memory, project data, or the network.
+6. Promote a passing generated candidate atomically to:
+
+   ```text
+   <home>/.agents/skills/<skill-id>/.generated/<declared-name>.<ext>
+   ```
+
+7. On audit, repair, or update, replace or remove generated content only when
+   every affected file carries the exact matching marker. Preserve unmarked or
+   ambiguously owned content and report a conflict.
+8. If no compatible runtime exists, show one exact optional runtime
+   installation plan: trusted source, exact command, destination, network
+   access, machine-wide or user-local effect, and uninstall path. Wait for
+   separate explicit approval. Never install a runtime automatically.
+9. If that proposal is declined or fails, retain the documented manual
+   fallback and report the fast path as unavailable.
+
+Also inventory packages under `<home>/.agents/skills/` carrying an exact Wiki
+Soul ownership marker whose skill ID no longer exists in repository `main`.
+Treat them as obsolete managed packages: include their native exposure and
+exact package path in the consolidated plan, remove them only after approval,
+and preserve them when any unmarked or unrelated file makes ownership
+ambiguous.
+
+A skill failure does not block another skill or a conforming hook. Report the
+overall installation as `partial` when a discovered skill cannot be installed
+or lacks both native exposure and a usable manual fallback. A missing optional
+fast path alone is not partial when the documented fallback is ready.
+
+Do not install a package for a skill. Do not install a runtime without the
+separate explicit approval above. Optional converters belong to a later,
+separately approved skill invocation.
+
+## 9. Generate and Test Every Hook
 
 For each direct `hooks/*.md` file:
 
@@ -332,7 +449,7 @@ Never copy canonical hook source from this repository; none is provided.
 Do not lower a test, skip an applicable security case, install a package, or
 activate a known failure to finish the operation.
 
-## 9. Register Hooks Independently
+## 10. Register Hooks Independently
 
 After a hook reaches `generated`:
 
@@ -358,7 +475,7 @@ tests pass, change the order: candidate first, registration last. Remove an old
 revision only after no native registration references it, every file carries
 the expected ownership marker, and no unowned file would be removed.
 
-## 10. Runtime Failure Contract
+## 11. Runtime Failure Contract
 
 Every generated hook is fail-open:
 
@@ -372,23 +489,33 @@ Memory remains manually usable through file-mode global instructions. In
 injected mode, a failed hook means memory is ignored for that context and
 normal agent work continues.
 
-## 11. Final Verification
+## 12. Final Verification
 
 Verify:
 
 - memory directories and catalogues exist;
 - local protocol matches the approved source and has parseable concept-style
   frontmatter with a non-empty `type`;
+- every discovered skill package has valid metadata and a matching ownership
+  marker at its canonical production path;
+- every declared helper fast path either passes its isolated production-path
+  self-test or is reported unavailable with a ready manual fallback;
+- every generated skill helper carries the exact matching ownership marker and
+  no canonical package file was changed to create it;
+- every skill is either recognized through a documented native user-global
+  surface or has an exact manual invocation;
 - the selected instruction mode is unambiguous: one managed block in `file`
   mode, or no duplicate instruction surface in `injected` mode;
 - structured global configuration still parses;
-- unrelated instructions and hooks remain;
+- unrelated instructions, skills, and hooks remain;
 - every hook's generated implementation still passes tests;
 - every registration points to the tested content-addressed path;
 - no client-project file was added;
-- no existing memory was imported or scanned;
+- no native memory, source file, folder, or conversation was imported or
+  scanned;
+- no real memory or user source was opened by helper self-tests;
 - no runtime package, daemon, database, Git repository, or network dependency
-  was introduced.
+  was introduced without the required separate approval.
 
 For live verification, confirm the payload contains only the adapter-authorized
 operating-rules section, when `injected` mode is selected, and the fixed
@@ -402,7 +529,7 @@ untrusted reference-data envelope plus:
 
 No concept, transcript, project registry, or brand-status banner may appear.
 
-## 12. Report
+## 13. Report
 
 Return a compact installation report:
 
@@ -410,14 +537,18 @@ Return a compact installation report:
 |---|---:|---:|---:|---|
 | Memory core | yes / no | n/a | n/a | |
 | Critical instructions | file / injected / no | loaded / not loaded | n/a | |
+| `<skill-id>` | yes / no | native / manual / no | n/a | |
+| `<skill-id>` helper | canonical / generated / unavailable | n/a | n/a | |
 | `<hook-id>` | yes / no / n/a | yes / no / n/a | yes / no / n/a | |
 
 Overall:
 
-- `complete` → memory core works, instructions are proven loaded, and every
-  discovered hook has `live-verified: yes`;
+- `complete` → memory core works, instructions are proven loaded, every skill
+  is native-loaded or has a ready manual fallback, and every discovered hook
+  has `live-verified: yes`;
 - `partial` → memory core works, but instructions are not proven loaded or at
-  least one hook is pending, failed, or unsupported;
+  least one skill or hook is pending, failed, or unsupported without its
+  required fallback;
 - `failed` → memory core or critical global instructions could not be installed
   safely.
 
@@ -431,3 +562,18 @@ Also report:
 - confirmation that memory was preserved and unrelated files were untouched.
 
 Never call a hook active before `live-verified`.
+
+State explicitly that installation performed no ingestion. When
+`wiki-soul-query` is available, show the current host's exact native or manual
+invocation for one topic query and state its fast-path status.
+
+When `wiki-soul-ingest` is available, show the current host's exact native or
+manual invocation for:
+
+- one selected file;
+- one selected folder;
+- discovery and proposed import of the current agent's native durable memory.
+
+Then offer to start one of those operations. Do not locate or open native
+memory merely to make the offer. A positive response begins a separate skill
+operation with its own inventory, plan, and confirmation.
