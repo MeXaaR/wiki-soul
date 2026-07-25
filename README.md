@@ -23,7 +23,7 @@ The installed memory then works locally and offline.
 Copy this message into your coding agent:
 
 ```text
-Install, audit, repair, or update Wiki Soul from this repository:
+Install Wiki Soul from this repository:
 https://github.com/MeXaaR/wiki-soul
 
 Read README.md first, then follow prompts/install.md from the current main
@@ -49,8 +49,8 @@ Wiki Soul separates knowledge by semantic scope:
 
 - **Global subject bundles** retain reusable knowledge such as Stripe webhook
   patterns, TypeScript pitfalls, writing preferences, or product workflows.
-- **Project bundles** retain context that belongs only to one repository or
-  client.
+- **Project bundles** retain context that belongs only to one workspace,
+  project, or client.
 - A project can point to global bundles that are durably relevant to it.
 
 The result is reusable knowledge without one giant memory file.
@@ -105,6 +105,7 @@ checks the mutable upstream OKF branch.
 ~/.agents/
 ├── memory/
 │   ├── index.md
+│   ├── okf-0.2.md
 │   ├── protocol.md
 │   ├── bundles/
 │   │   └── <subject-id>/
@@ -130,14 +131,15 @@ On Windows, `~` resolves to the current user's profile directory.
 
 ## What the Installer Does
 
-The main prompt:
+The fresh-install prompt:
 
-1. reads the vendored OKF 0.2 contract, memory protocol, current-agent adapter,
-   every skill package, and every hook contract;
+1. reads the lossless compact OKF 0.2 contract, the Wiki Soul protocol,
+   current-agent adapter, every skill package, and every hook contract;
 2. detects the agent, OS, home directory, configuration, and existing hooks;
 3. presents one consolidated plan and diff;
 4. asks for one confirmation;
-5. creates or repairs the OKF 0.2 memory core directly;
+5. creates the OKF 0.2 memory core directly, including local `okf-0.2.md` and
+   `protocol.md` contracts;
 6. discovers, validates, installs, and isolated-tests every applicable skill
    helper, generating a marked local runtime alternative only when needed;
 7. installs a short global instruction block, or uses a certified
@@ -155,8 +157,9 @@ The consolidated installer confirmation covers planned file changes. A host may
 still require its own separate trust review—such as Codex `/hooks`—because the
 installer must not bypass native security controls.
 
-The same prompt is also the updater and repair workflow. `main` is the live
-source; there are no releases or separate version registry.
+This prompt handles fresh installations only. Any existing Wiki Soul managed
+marker or target is reported as a conflict and left unchanged. Framework
+evolution is a maintainer concern, never an end-user migration step.
 
 ## Hook Model
 
@@ -264,9 +267,16 @@ after real checks. Trust tiers are derived, never stored. Source-backed claims
 use `sources` plus matching footnotes; freshness deadlines are written only
 when a real policy exists.
 
-The complete local rules live in
-[`prompts/protocol/memory-okf.md`](prompts/protocol/memory-okf.md) and are copied
-to `~/.agents/memory/protocol.md` during installation.
+The complete local rules are split deliberately:
+
+- [`contracts/okf-0.2-compact.md`](contracts/okf-0.2-compact.md) is the
+  lossless compact OKF standard and is installed as
+  `~/.agents/memory/okf-0.2.md`;
+- [`prompts/protocol/memory-okf.md`](prompts/protocol/memory-okf.md) defines how
+  Wiki Soul operates and is installed as `~/.agents/memory/protocol.md`.
+
+Agents read both before writing. Ordinary reads do not load either file unless
+needed.
 
 ## Query Wiki Soul
 
@@ -352,7 +362,6 @@ It preserves `~/.agents/memory/` by default.
 
 - Automatic or background ingestion during installation.
 - Destructive modification of native memories or raw transcript archival.
-- Git backup and automatic commits.
 - End-of-session memory extraction.
 - Concurrent writers and locks.
 - Vector or semantic retrieval.
@@ -367,6 +376,8 @@ These boundaries keep the initial system transparent and small.
 - [`PRD.md`](PRD.md) — product outcome and acceptance criteria.
 - [`SPEC.md`](SPEC.md) — normative Wiki Soul behavior.
 - [`ROADMAP.md`](ROADMAP.md) — implementation status and deferred work.
+- [`contracts/okf-0.2-compact.md`](contracts/okf-0.2-compact.md) — lossless
+  compact OKF 0.2 contract installed locally.
 - [`prompts/install.md`](prompts/install.md) — universal installer.
 - [`prompts/protocol/memory-okf.md`](prompts/protocol/memory-okf.md) — installed
   memory protocol.

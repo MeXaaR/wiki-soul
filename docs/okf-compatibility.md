@@ -9,6 +9,12 @@ It is based on the immutable local
 for this framework release. Upstream changes are reviewed only through a
 deliberate maintainer update and never during user installation.
 
+[`contracts/okf-0.2-compact.md`](../contracts/okf-0.2-compact.md) is its
+lossless operational compilation. It preserves normative levels, definitions,
+data shapes, defaults, exceptions, and section coverage while removing
+explanatory repetition and long examples. Installation stores that compact
+contract locally; Wiki Soul behavior remains separate in `protocol.md`.
+
 ## 1. Compatibility principle
 
 OKF standardizes a minimal foundation:
@@ -51,6 +57,7 @@ Each global topic and each project is an autonomous OKF 0.2 bundle.
 ```text
 ~/.agents/memory/
 ├── index.md                         # Lightweight Wiki Soul catalogue
+├── okf-0.2.md                       # Local compact normative contract
 ├── protocol.md                      # Local Wiki Soul protocol
 ├── bundles/
 │   ├── stripe/                      # Autonomous OKF 0.2 bundle
@@ -63,7 +70,7 @@ Each global topic and each project is an autonomous OKF 0.2 bundle.
 │       └── esm-gotchas.md
 └── projects/
     ├── index.md                     # Complete project catalogue
-    └── github-com-acme-shop/        # Autonomous OKF 0.2 bundle
+    └── acme-shop-a1b2c3d4/          # Autonomous OKF 0.2 bundle
         ├── index.md
         ├── related-bundles.md
         └── payment-architecture.md
@@ -73,6 +80,12 @@ The OKF conformance units are:
 
 - every direct child of `bundles/`;
 - every project directory under `projects/`.
+
+OKF defines bundles, not projects or workspaces. A project bundle is a Wiki
+Soul convention for durable knowledge scoped to the current context. Wiki Soul
+uses a trusted explicit safe ID when available, otherwise a trusted host
+workspace root, otherwise the normalized current directory. Different
+normalized paths are different contexts.
 
 Each unit's root `index.md` declares:
 
@@ -88,7 +101,8 @@ profile. It is the only frontmatter allowed in an OKF index.
 `~/.agents/memory/` is a Wiki Soul container and catalogue, not one Knowledge
 Bundle. The root `index.md` and `projects/index.md` are orchestration
 catalogues outside the autonomous bundle boundaries. `protocol.md` is
-installation-managed. These files do not receive `okf_version`.
+installation-managed, as is `okf-0.2.md`. These files do not receive
+`okf_version`.
 
 This boundary keeps every topic and project independently distributable, as
 intended by the official
@@ -98,6 +112,7 @@ intended by the official
 
 `~/.agents/memory/index.md` stays small. It contains:
 
+- a link to the local compact OKF contract;
 - a link to the local protocol;
 - one entry per global topic bundle;
 - a rich, concise description for each bundle;
@@ -110,7 +125,9 @@ only on demand. There is no second global catalogue under `bundles/`.
 Example:
 
 ```markdown
-# Protocol
+# Contracts
+
+- [OKF 0.2](okf-0.2.md) — Normative format contract.
 
 - [Memory protocol](protocol.md) — Rules for reading, writing, validating, and maintaining memory.
 
@@ -401,9 +418,10 @@ See official
 | `status` and `stale_after` | OKF 0.2 |
 | `Attested Computation` on-disk contract | OKF 0.2 |
 | `index.md`, `log.md`, and Markdown links | OKF |
+| Lossless installed compact standard | Wiki Soul packaging of OKF 0.2 |
 | `generated` on new/changed content, explicit `status`, and root `okf_version` | Wiki Soul profile |
 | `~/.agents/memory/` root and catalogues | Wiki Soul |
-| Global topics and Git-derived project bundles | Wiki Soul |
+| Global topics and workspace-context project bundles | Wiki Soul |
 | Rich descriptions without `Use when:` | Wiki Soul, compatible with OKF |
 | Hook routing, metadata search, and progressive reading | Wiki Soul |
 | 200-line or 8-KiB review threshold | Wiki Soul |

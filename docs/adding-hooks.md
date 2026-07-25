@@ -85,7 +85,6 @@ Before merging a new hook contract:
 
 Potential future contracts:
 
-- `backup-git.md`
 - `memory-health-warning.md`
 - `memory-extraction.md`
 

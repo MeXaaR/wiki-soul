@@ -1,31 +1,32 @@
 # Codex adapter
 
-Use this prompt when the current host is Codex. It adapts the common memory
-protocol and every hook contract in this repository to the installed Codex
-environment.
+Use this prompt when the current host is Codex. It adapts the local OKF
+contract, Wiki Soul protocol, and every hook contract in the framework source
+to the installed Codex environment.
 
-You are the installer, auditor, updater, repairer, and uninstaller for this
-adapter. Work autonomously after the user approves the installer's single
-overall plan. Ask again only for a real conflict, a destructive action, or an
-administrative restriction that changes the requested outcome.
+You are the fresh installer and verifier for this adapter. Work autonomously
+after the user approves the installer's single overall plan. Ask again only for
+a real conflict, a destructive action, or an administrative restriction that
+changes the requested outcome.
 
 ## Authority and scope
 
-1. Treat the official OKF specification as authoritative for memory format.
-2. Treat the local memory protocol installed by the main prompt as
-   authoritative for Wiki Soul behavior.
+1. Treat the local OKF contract installed by the main prompt as authoritative
+   for memory format.
+2. Treat the local Wiki Soul protocol installed by the main prompt as
+   authoritative for framework behavior.
 3. Treat current official Codex documentation and the installed Codex version
    as authoritative for Codex integration.
 4. Read every Markdown contract in `../hooks/`. Install each hook independently.
    Start with [`../hooks/memory-injection.md`](../hooks/memory-injection.md).
-5. Do not import, inspect, or migrate Codex's own memory store.
-6. Do not add files to client repositories. Install only global user
+5. Do not import, inspect, or modify Codex's own memory store.
+6. Do not add files to client workspaces. Install only global user
    integration.
 7. Do not install packages or introduce a new runtime. Generate an
    implementation suited to the OS and runtimes already available.
-8. Never copy a prewritten hook implementation from this repository. Design
-   the smallest local implementation that satisfies the contract, then prove
-   it with tests.
+8. Never copy a prewritten hook implementation from the framework source.
+   Design the smallest local implementation that satisfies the contract, then
+   prove it with tests.
 
 ## Discover the active Codex environment
 
@@ -42,25 +43,25 @@ Before proposing changes:
    - the hooks feature state and any managed-only policy;
    - the resolved `/hooks` inventory across user, profile, project, plugin, and
      managed sources, including other memory hooks;
-   - the target directory `~/.agents/hooks/codex/` (or its native equivalent).
+   - the target directory `~/.agents/hooks/codex/` (or its native equivalent);
+   - the installed memory root, OKF contract path, and protocol path.
 4. Codex loads `AGENTS.override.md` instead of `AGENTS.md` at global scope when
-   the override is non-empty. Audit both files for Wiki Soul markers, then
-   maintain exactly one block across the pair in the file Codex actually loads:
+   the override is non-empty. Audit both files for Wiki Soul markers. Any
+   existing Wiki Soul marker is a pre-existing installation conflict. Otherwise
+   install one block in the file Codex actually loads:
    - use the existing non-empty `AGENTS.override.md` when active;
    - otherwise use the existing `AGENTS.md`;
    - create `AGENTS.md` only when neither active file exists.
-   If a valid block exists only in the inactive file, include its exact move to
-   the active file in the consolidated diff. Damaged or duplicated blocks
-   across the pair are a conflict.
+   Damaged or duplicated markers across the pair are also conflicts.
 5. For hooks, preserve the representation already used by the global Codex
    layer:
    - if only `hooks.json` exists, merge there;
    - if only inline hooks in `config.toml` exist, merge there;
    - if neither exists, prefer global `hooks.json`;
    - if both forms already exist, do not create another source. Choose the
-     existing source that contains this adapter's prior entries, or
-     `hooks.json` when this is a fresh install, and report Codex's existing
-     mixed-source warning.
+     global `hooks.json` and report Codex's existing mixed-source warning.
+   Any prior Wiki Soul entry in either source is a pre-existing installation
+   conflict.
 6. Stop registration, but not generation or isolated testing, when policy
    disables user hooks or allows managed hooks only. Report the exact
    restriction. Never weaken managed policy.
@@ -89,8 +90,9 @@ After approval:
   hooks, matchers, ordering, and user instructions;
 - never replace an existing hook collection;
 - identify this integration by exact generated script paths;
-- detect an existing equivalent definition and update it in place;
-- never duplicate a handler on rerun;
+- treat an existing Wiki Soul definition as a pre-existing installation
+  conflict;
+- never duplicate a handler;
 - stop and explain when another memory-injection hook would create ambiguous or
   duplicate context;
 - use the resolved `/hooks` inventory to detect collisions outside the chosen
@@ -101,8 +103,8 @@ After approval:
 
 ## Install the global instruction block
 
-Insert or update exactly one copy across both global candidates of the
-canonical managed block from
+Insert exactly one copy across both global candidates of the canonical managed
+block from
 [`../install.md`](../install.md#7-install-the-critical-global-instructions) in
 the active global instruction file. Do not maintain an adapter-specific copy.
 
@@ -120,8 +122,8 @@ For every `../hooks/*.md` file:
 2. Inspect the current official Codex hook schema for the installed version.
 3. Choose the smallest safe implementation supported by the current OS and
    available runtime.
-4. Generate it in a new temporary candidate directory outside memory. Preserve
-   a prior working implementation until the candidate passes.
+4. Generate it in a new temporary candidate directory outside memory. Stop if
+   a prior Wiki Soul deployment already exists.
 5. Add the required Wiki Soul ownership marker, compute the deployment digest
    defined by the main installer, and after all isolated tests pass promote it
    to `~/.agents/hooks/codex/<hook-id>/revisions/<digest>/`. Test it once from
@@ -136,7 +138,7 @@ For every `../hooks/*.md` file:
 10. Do not register this hook yet.
 
 No generated hook may execute memory content, construct shell commands from a
-repository name, follow paths outside the permitted memory root, expose
+workspace name, follow paths outside the permitted memory root, expose
 secrets, or emit partial memory context after an error.
 
 ## Codex lifecycle mapping for memory injection
@@ -176,11 +178,13 @@ Every hook must pass its own contract. The memory-injection implementation must
 also prove:
 
 1. correct memory-root resolution on the current OS;
-2. stable project ID from a Git remote and the documented
-   `directory-name + short-path-hash` fallback;
-3. equivalent identity for supported URL forms of the same Git remote;
-4. correct handling of no repository, no remote, missing memory root, missing
-   project bundle, empty index, and malformed input;
+2. exact precedence of trusted host project ID matching the common lowercase
+   syntax, trusted workspace root, and real current working directory;
+3. stable `basename + short-path-hash` identity for the same real path and
+   distinct identity for different real paths;
+4. correct handling of missing, uppercase, overlong, or otherwise invalid
+   project ID, missing project context, ambiguous multi-root input, missing
+   memory root, missing project bundle, empty index, and malformed input;
 5. loading only the allowed global and current-project `index.md` files;
 6. the exact bounded payload required by the common contract, with no concept
    files, full bundles, transcript data, or invented status banner;
@@ -190,7 +194,7 @@ also prove:
 9. correct behavior for `startup`, `resume`, `clear`, `compact`, and
    `SubagentStart` fixtures;
 10. read-only behavior for the entire memory tree;
-11. path-containment checks, hostile repository names, spaces, non-ASCII
+11. path-containment checks, hostile workspace names, spaces, non-ASCII
     paths, and native Windows path/command quoting when on Windows;
 12. no network access, secret reads, transcript reads, or execution of memory
     content;
@@ -209,7 +213,7 @@ Also validate the proposed configuration in a temporary copy:
 - all unrelated configuration is byte-equivalent where practical and
   semantically equivalent otherwise;
 - existing hooks remain present;
-- rerunning the merge creates no duplicate;
+- no Wiki Soul definition existed before the proposed merge;
 - the command resolves to the generated script on the current OS;
 - every registered event and matcher is supported by the installed Codex
   version.
@@ -287,50 +291,9 @@ All generated hooks must fail open:
 - show one short diagnostic per logical context, including the failing path or
   check but no sensitive content;
 - allow Codex to continue without injected memory;
-- recommend rerunning the main installer to audit and repair the integration.
+- report that the integration requires diagnosis before memory writes resume.
 
 Do not silently claim that memory was loaded.
-
-## Update and repair
-
-On rerun:
-
-1. reread `main`, the common protocol, this adapter, and every hook contract;
-2. audit the active instruction block, generated scripts, registration,
-   trust-visible state, and live behavior;
-3. leave conforming local implementations unchanged;
-4. regenerate only implementations that no longer satisfy their contracts;
-5. show one combined diff before changing global files;
-6. rerun complete tests for every changed hook;
-7. preserve each unchanged hook's registration and status;
-8. deploy changed implementations at a new digest path and report that the
-   resulting changed definition requires renewed `/hooks` review.
-
-Do not add an independent version registry or manifest.
-
-## Uninstall this adapter
-
-Uninstall only Codex integration:
-
-1. inspect both global `AGENTS.override.md` and `AGENTS.md`, then remove every
-   unambiguous exact
-   `<!-- WIKI_SOUL_START -->` … `<!-- WIKI_SOUL_END -->` block from the
-   pair; stop if either file has damaged, duplicate, or overlapping markers;
-2. structurally remove only hook handlers whose exact generated paths belong
-   to `~/.agents/hooks/codex/` and whose targets carry the matching ownership
-   marker; treat a missing or unmarked target as an ownership conflict;
-3. preserve surrounding matcher groups when they still contain other handlers;
-4. preserve an empty matcher group when its ownership cannot be proven; never
-   infer ownership merely because Wiki Soul removed its last handler;
-5. delete only unreferenced generated files carrying the matching ownership
-   marker under `~/.agents/hooks/codex/`; remove no directory that contains an
-   unmarked or unrelated file;
-6. preserve every unrelated instruction, hook, config key, and managed policy;
-7. preserve `~/.agents/memory/` by default;
-8. require separate explicit confirmation before any memory deletion.
-
-Uninstallation must be idempotent. Report absent elements as already removed,
-not as errors.
 
 ## Final report
 

@@ -1,12 +1,10 @@
 // WIKI_SOUL_MANAGED_SKILL_ASSET_V1 skill=wiki-soul-query
 
-import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { domainToASCII } from 'node:url';
 
 const DEFAULT_LIMIT = 20;
 const MAX_FRONTMATTER_BYTES = 64 * 1024;
@@ -18,7 +16,7 @@ const FIELD_WEIGHTS = {
 };
 const COVERAGE_BONUS = 3;
 const RESERVED_FILES = new Set(['index.md', 'log.md']);
-const PROJECT_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?-[a-f0-9]{8}$/u;
+const PROJECT_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/u;
 const TRUST_RANK = {
   unverified: 0,
   'machine-confirmed': 1,
@@ -59,206 +57,63 @@ function slugify(value) {
   return slug || 'project';
 }
 
-function projectIdFromCanonical(canonical, prefixSource = canonical) {
-  return `${slugify(prefixSource)}-${sha256Prefix(canonical)}`;
-}
-
-function stripAsciiWhitespace(value) {
-  return String(value).replace(/^[\u0009-\u000d\u0020]+|[\u0009-\u000d\u0020]+$/gu, '');
-}
-
-function normalizeRemotePath(rawPath) {
-  const segments = [];
-
-  for (const rawSegment of rawPath.split('/')) {
-    if (!rawSegment) {
-      continue;
+function normalizeCanonicalPath(realPath, platform = process.platform) {
+  let canonical = String(realPath).normalize('NFC');
+  if (platform === 'win32') {
+    canonical = canonical.replace(/\\/gu, '/').toLowerCase();
+    if (/^[a-z]:\/+$/u.test(canonical)) {
+      return `${canonical.slice(0, 2)}/`;
     }
-
-    let decoded;
-    try {
-      decoded = decodeURIComponent(rawSegment);
-    } catch {
-      return null;
+    const uncRoot = canonical.match(/^(\/\/[^/]+\/[^/]+)\/*$/u);
+    if (uncRoot) {
+      return `${uncRoot[1]}/`;
     }
-
-    if (
-      decoded === '..'
-      || decoded.includes('/')
-      || decoded.includes('\\')
-      || /[\u0000-\u001f\u007f]/u.test(decoded)
-    ) {
-      return null;
-    }
-    if (decoded === '.') {
-      continue;
-    }
-
-    segments.push(decoded.normalize('NFC'));
-  }
-
-  if (segments.length === 0) {
-    return null;
-  }
-
-  segments[segments.length - 1] = segments[segments.length - 1].replace(/\.git$/iu, '');
-  if (!segments[segments.length - 1]) {
-    return null;
-  }
-
-  return segments.join('/');
-}
-
-function normalizeHost(hostname) {
-  const unwrapped = hostname.startsWith('[') && hostname.endsWith(']')
-    ? hostname.slice(1, -1)
-    : hostname;
-  const ascii = unwrapped.includes(':') ? unwrapped : domainToASCII(unwrapped);
-  if (!ascii) {
-    return null;
-  }
-  const normalized = ascii.toLowerCase().replace(/\.$/u, '');
-  return normalized.includes(':') ? `[${normalized}]` : normalized;
-}
-
-function canonicalizeRemote(input) {
-  const remote = stripAsciiWhitespace(input);
-  if (!remote) {
-    return null;
-  }
-
-  let hostname;
-  let port = '';
-  let rawPath;
-  let protocol = '';
-
-  if (/^[a-z][a-z0-9+.-]*:\/\//iu.test(remote)) {
-    let parsed;
-    try {
-      parsed = new URL(remote);
-    } catch {
-      return null;
-    }
-
-    protocol = parsed.protocol.toLowerCase();
-    if (!['http:', 'https:', 'ssh:', 'git:'].includes(protocol)) {
-      return null;
-    }
-
-    hostname = parsed.hostname;
-    port = parsed.port;
-    rawPath = parsed.pathname;
   } else {
-    const scpMatch = remote.match(/^(?:[^@/:\s]+@)?(\[[^\]]+\]|[^/:\s]+):(.+)$/u);
-    if (!scpMatch) {
-      return null;
-    }
-    hostname = scpMatch[1];
-    rawPath = scpMatch[2].split(/[?#]/u, 1)[0];
+    canonical = canonical.split(path.sep).join('/');
   }
-
-  const host = normalizeHost(hostname);
-  const repositoryPath = normalizeRemotePath(rawPath);
-  if (!host || !repositoryPath) {
-    return null;
-  }
-
-  const defaultPorts = {
-    'http:': '80',
-    'https:': '443',
-    'ssh:': '22',
-    'git:': '9418',
-  };
-  const canonicalPort = port && port !== defaultPorts[protocol] ? `:${port}` : '';
-  return `${host}${canonicalPort}/${repositoryPath}`;
-}
-
-function runGit(args, cwd) {
-  const result = spawnSync('git', args, {
-    cwd,
-    encoding: 'utf8',
-    timeout: 3000,
-    windowsHide: true,
-  });
-  if (result.error || result.status !== 0) {
-    return null;
-  }
-  return result.stdout.trim();
-}
-
-function detectProjectRoot(candidateRoot) {
-  const requested = path.resolve(candidateRoot || process.cwd());
-  let realRequested;
-  try {
-    realRequested = fs.realpathSync(requested);
-  } catch {
-    throw new Error('project_root_not_found');
-  }
-
-  if (candidateRoot) {
-    return realRequested;
-  }
-
-  const gitRoot = runGit(['rev-parse', '--show-toplevel'], realRequested);
-  if (!gitRoot) {
-    return realRequested;
-  }
-
-  try {
-    return fs.realpathSync(gitRoot);
-  } catch {
-    return realRequested;
-  }
-}
-
-function remoteCandidates(projectRoot) {
-  const output = runGit(['remote'], projectRoot);
-  if (!output) {
-    return [];
-  }
-
-  const names = [...new Set(output.split(/\r?\n/u).map((value) => value.trim()).filter(Boolean))];
-  const ordered = [
-    ...names.filter((name) => name === 'origin'),
-    ...names.filter((name) => name === 'upstream'),
-    ...names.filter((name) => name !== 'origin' && name !== 'upstream').sort(),
-  ];
-
-  return ordered.flatMap((name) => {
-    const fetchSpec = runGit(['config', '--get-all', `remote.${name}.fetch`], projectRoot);
-    const remoteUrl = fetchSpec ? runGit(['remote', 'get-url', name], projectRoot) : null;
-    return remoteUrl ? [remoteUrl] : [];
-  });
+  return canonical.replace(/\/+$/u, '') || '/';
 }
 
 function canonicalLocalPath(projectRoot) {
-  let canonical = fs.realpathSync(projectRoot).normalize('NFC').split(path.sep).join('/');
-  canonical = canonical.replace(/\/+$/u, '');
-  if (process.platform === 'win32') {
-    canonical = canonical.toLowerCase();
+  const supplied = projectRoot !== null && projectRoot !== undefined;
+  const requested = supplied ? String(projectRoot) : process.cwd();
+  if (!path.isAbsolute(requested)) {
+    throw new Error('project_root_not_absolute');
   }
-  return canonical;
+  let realRoot;
+  try {
+    realRoot = fs.realpathSync(requested);
+  } catch {
+    throw new Error('project_root_not_found');
+  }
+  if (!fs.statSync(realRoot).isDirectory()) {
+    throw new Error('project_root_not_directory');
+  }
+  return normalizeCanonicalPath(realRoot);
 }
 
 function deriveProjectId(projectRootOption) {
-  const projectRoot = detectProjectRoot(projectRootOption);
-
-  for (const remote of remoteCandidates(projectRoot)) {
-    const canonical = canonicalizeRemote(remote);
-    if (canonical) {
-      return projectIdFromCanonical(canonical);
-    }
-  }
-
-  const canonical = canonicalLocalPath(projectRoot);
-  return projectIdFromCanonical(canonical, path.basename(projectRoot));
+  const canonical = canonicalLocalPath(projectRootOption);
+  const basename = canonical.split('/').filter(Boolean).at(-1) || 'project';
+  return `${slugify(basename)}-${sha256Prefix(canonical)}`;
 }
 
-function validateProjectId(projectId) {
-  if (!PROJECT_ID_PATTERN.test(projectId)) {
-    throw new Error('invalid_project_id');
+function validProjectId(projectId) {
+  return typeof projectId === 'string' && PROJECT_ID_PATTERN.test(projectId);
+}
+
+function resolveProjectId(projectIdOption, projectRootOption) {
+  if (validProjectId(projectIdOption)) {
+    return projectIdOption;
   }
-  return projectId;
+  if (projectRootOption !== null && projectRootOption !== undefined) {
+    try {
+      return deriveProjectId(projectRootOption);
+    } catch {
+      // An invalid or unavailable host root falls back to the real cwd.
+    }
+  }
+  return deriveProjectId();
 }
 
 function findFrontmatterBounds(buffer, eof = false) {
@@ -1213,12 +1068,15 @@ function findConceptFiles(directory) {
   return files;
 }
 
-function collectScopes(memoryRoot, projectId, allProjects) {
+function collectScopes(memoryRoot, projectId, allProjects, globalOnly = false) {
   const scopes = [{
     directory: path.join(memoryRoot, 'bundles'),
     name: 'global',
     rank: 1,
   }];
+  if (globalOnly) {
+    return scopes;
+  }
   const projectsRoot = path.join(memoryRoot, 'projects');
 
   if (allProjects) {
@@ -1250,6 +1108,7 @@ function queryMemory({
   memoryRoot,
   projectId,
   allProjects,
+  globalOnly = false,
   limit,
   rawTerms,
   today = currentCalendarDate(),
@@ -1263,7 +1122,7 @@ function queryMemory({
   const ranked = [];
   let inspected = 0;
 
-  for (const scope of collectScopes(realMemoryRoot, projectId, allProjects)) {
+  for (const scope of collectScopes(realMemoryRoot, projectId, allProjects, globalOnly)) {
     for (const filePath of findConceptFiles(scope.directory)) {
       inspected += 1;
       const result = resultForDocument({
@@ -1296,7 +1155,9 @@ function queryMemory({
     query: terms.map((term) => term.original),
     memoryRoot: realMemoryRoot,
     projectId,
-    scope: allProjects ? 'global+all-projects' : 'global+current-project',
+    scope: globalOnly
+      ? 'global'
+      : allProjects ? 'global+all-projects' : 'global+current-project',
     inspected,
     count,
     returned: results.length,
@@ -1318,6 +1179,7 @@ function parseArguments(argv) {
     projectId: null,
     projectRoot: null,
     allProjects: false,
+    globalOnly: false,
     limit: DEFAULT_LIMIT,
     selfTest: false,
     help: false,
@@ -1338,6 +1200,8 @@ function parseArguments(argv) {
       options.projectRoot = argv[++index];
     } else if (argument === '--all-projects') {
       options.allProjects = true;
+    } else if (argument === '--global-only') {
+      options.globalOnly = true;
     } else if (argument === '--limit') {
       options.limit = parsePositiveInteger(argv[++index], 'limit');
     } else if (argument === '--all') {
@@ -1356,6 +1220,9 @@ function parseArguments(argv) {
   if (!options.memoryRoot) {
     throw new Error('missing_memory_root');
   }
+  if (options.allProjects && options.globalOnly) {
+    throw new Error('conflicting_project_scope');
+  }
   return options;
 }
 
@@ -1371,28 +1238,73 @@ function assert(condition, message) {
 }
 
 function runSelfTest() {
-  const vectorOne = canonicalizeRemote('git@github.com:GoogleCloudPlatform/knowledge-catalog.git');
-  const vectorTwo = canonicalizeRemote('https://github.com/GoogleCloudPlatform/knowledge-catalog/');
-  assert(vectorOne === 'github.com/GoogleCloudPlatform/knowledge-catalog', 'remote_vector_one');
-  assert(vectorTwo === vectorOne, 'equivalent_remote_vector');
-  assert(projectIdFromCanonical(vectorOne) === 'github-com-googlecloudplatform-knowledge-catalog-27f6731e', 'remote_id_one');
-
-  const resumeOne = canonicalizeRemote('https://gitlab.example.com/Team/R%C3%A9sum%C3%A9.git');
-  const resumeTwo = canonicalizeRemote('ssh://git@gitlab.example.com/Team/Résumé');
-  assert(resumeOne === 'gitlab.example.com/Team/Résumé', 'remote_vector_two');
-  assert(resumeTwo === resumeOne, 'equivalent_unicode_remote');
-  assert(projectIdFromCanonical(resumeOne) === 'gitlab-example-com-team-resume-95f3ccd5', 'remote_id_two');
-  assert(
-    projectIdFromCanonical('c:/users/alice/work/my project', 'my project') === 'my-project-d3480979',
-    'windows_fallback_vector',
-  );
-
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-soul-query-'));
   const memoryRoot = path.join(temporaryRoot, 'memory');
   const currentProjectId = 'current-project-1234abcd';
   const otherProjectId = 'other-project-8765dcba';
 
   try {
+    const workspaceRoot = path.join(temporaryRoot, 'Cafe\u0301 Workspace');
+    const otherWorkspaceRoot = path.join(temporaryRoot, 'Other Workspace');
+    fs.mkdirSync(workspaceRoot);
+    fs.mkdirSync(otherWorkspaceRoot);
+    const canonicalWorkspace = canonicalLocalPath(workspaceRoot);
+    assert(
+      canonicalWorkspace === normalizeCanonicalPath(fs.realpathSync(workspaceRoot))
+      && canonicalWorkspace === canonicalWorkspace.normalize('NFC')
+      && !canonicalWorkspace.endsWith('/'),
+      'workspace_path_canonicalization',
+    );
+    assert(
+      deriveProjectId(workspaceRoot) === `cafe-workspace-${sha256Prefix(canonicalWorkspace)}`,
+      'workspace_path_id',
+    );
+    assert(
+      deriveProjectId(`${workspaceRoot}${path.sep}`) === deriveProjectId(workspaceRoot),
+      'trailing_separator_identity',
+    );
+    assert(
+      normalizeCanonicalPath('C:\\Users\\ALICE\\Re\u0301sume\u0301\\', 'win32')
+      === 'c:/users/alice/résumé',
+      'windows_path_canonicalization',
+    );
+    assert(
+      normalizeCanonicalPath('C:\\', 'win32') === 'c:/'
+      && normalizeCanonicalPath('\\\\SERVER\\Share\\', 'win32') === '//server/share/'
+      && normalizeCanonicalPath('\\\\server\\share', 'win32') === '//server/share/',
+      'filesystem_root_canonicalization',
+    );
+    assert(
+      deriveProjectId(workspaceRoot) !== deriveProjectId(otherWorkspaceRoot),
+      'distinct_paths_distinct_contexts',
+    );
+    assert(
+      resolveProjectId(currentProjectId, path.join(temporaryRoot, 'missing')) === currentProjectId,
+      'explicit_project_id_priority',
+    );
+    assert(
+      resolveProjectId('trusted-context', path.join(temporaryRoot, 'missing')) === 'trusted-context',
+      'explicit_project_id_independent_shape',
+    );
+    assert(
+      resolveProjectId('../unsafe', workspaceRoot) === deriveProjectId(workspaceRoot),
+      'invalid_explicit_project_id_fallback',
+    );
+    assert(
+      resolveProjectId(null, 'relative-root') === deriveProjectId(),
+      'relative_project_root_fallback',
+    );
+    const fileRoot = path.join(temporaryRoot, 'not-a-workspace.txt');
+    fs.writeFileSync(fileRoot, 'fixture', 'utf8');
+    assert(
+      resolveProjectId(null, fileRoot) === deriveProjectId(),
+      'file_project_root_fallback',
+    );
+    assert(
+      deriveProjectId() === deriveProjectId(process.cwd()),
+      'current_directory_fallback',
+    );
+
     const parsedOptions = parseArguments([
       '--project-id',
       currentProjectId,
@@ -1407,6 +1319,12 @@ function runSelfTest() {
       && parsedOptions.limit === 7
       && queryTerms(parsedOptions.terms)[0].original === 'signature webhook',
       'cli_options_and_quoted_phrase',
+    );
+    const globalOnlyOptions = parseArguments(['--global-only', 'topic']);
+    assert(
+      globalOnlyOptions.globalOnly
+      && collectScopes(memoryRoot, null, false, true).map((scope) => scope.name).join(',') === 'global',
+      'ambiguous_workspace_global_only',
     );
 
     fs.mkdirSync(path.join(memoryRoot, 'bundles'), { recursive: true });
@@ -1624,6 +1542,22 @@ function runSelfTest() {
     assert(stripe.results[0].score === 19, 'weights_and_coverage');
     assert(stripe.results[0].path === 'bundles/stripe/webhooks.md', 'ranked_path');
 
+    const globalOnly = queryMemory({
+      memoryRoot,
+      projectId: null,
+      allProjects: false,
+      globalOnly: true,
+      limit: DEFAULT_LIMIT,
+      rawTerms: ['stripe'],
+    });
+    assert(
+      globalOnly.scope === 'global'
+      && globalOnly.projectId === null
+      && globalOnly.count === 1
+      && globalOnly.results[0].scope === 'global',
+      'global_only_result_scope',
+    );
+
     const bodyOnly = queryMemory({
       memoryRoot,
       projectId: currentProjectId,
@@ -1827,7 +1761,7 @@ function runSelfTest() {
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
   }
 
-  return { ok: true, tests: 34 };
+  return { ok: true, tests: 41 };
 }
 
 function helpText() {
@@ -1837,8 +1771,9 @@ function helpText() {
     'Options:',
     '  --memory-root <path>  Wiki Soul memory root',
     '  --project-id <id>     Resolved Wiki Soul project ID',
-    '  --project-root <path> Derive identity from this project root',
+    '  --project-root <path> Derive identity from this trusted workspace root',
     '  --all-projects        Include every project bundle',
+    '  --global-only         Search global bundles only',
     '  --limit <count>       Maximum results (default: 20)',
     '  --all                 Return all matches',
     '  --self-test           Run isolated built-in tests',
@@ -1869,11 +1804,14 @@ function main() {
     if (!fs.existsSync(memoryRoot) || !fs.statSync(memoryRoot).isDirectory()) {
       throw new Error('memory_root_not_found');
     }
-    const projectId = validateProjectId(options.projectId || deriveProjectId(options.projectRoot));
+    const projectId = options.globalOnly
+      ? null
+      : resolveProjectId(options.projectId, options.projectRoot);
     const output = queryMemory({
       memoryRoot,
       projectId,
       allProjects: options.allProjects,
+      globalOnly: options.globalOnly,
       limit: options.limit,
       rawTerms: options.terms,
     });

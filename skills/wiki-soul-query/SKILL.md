@@ -25,24 +25,52 @@ context. Keep the query stage read-only.
 4. Bun may run the same file after its self-test passes. Deno may run its
    self-test with write access limited to the isolated temporary fixture, then
    run production queries with read access limited to the skill, memory, and
-   project paths plus permission to execute `git`.
+   project paths.
 5. When the installer created a marked implementation under
    `<skill-dir>/.generated/`, use that implementation if its runtime is
    available and its marker and self-test are valid.
 6. Pass the injected project ID with `--project-id <id>` when available.
-   Otherwise let the helper derive it from the current repository or path.
+   Otherwise pass the trusted workspace root with `--project-root <path>`.
+   Without either option, the helper uses the real current working directory.
+   For an ambiguous multi-root context, pass `--global-only`.
 
 Useful options:
 
 ```text
 --project-id <id>     Use the already resolved Wiki Soul project ID.
 --all-projects        Search every project bundle, not only the current one.
+--global-only         Search global bundles only; use for ambiguous workspace routing.
 --limit <count>       Return at most this many results. Default: 20.
 --all                 Return every matching result.
 --memory-root <path>  Override the default ~/.agents/memory root.
---project-root <path> Derive identity from this trusted project root.
+--project-root <path> Derive identity from this trusted workspace root.
 --self-test           Run isolated built-in fixtures only.
 ```
+
+Project identity is independent of workspace tooling:
+
+1. `--global-only` means no project identity is selected;
+2. a valid explicit `--project-id` from a trusted host surface always wins; it
+   must be one lowercase ASCII path segment of 1–64 characters, start and end
+   with a letter or digit, and contain only letters, digits, and hyphens;
+3. an invalid explicit ID is unavailable, then a valid `--project-root` is used
+   directly as the trusted workspace root;
+4. otherwise the real current working directory is used;
+5. the selected path must be an existing real absolute directory; a relative,
+   missing, inaccessible, or non-directory root is unavailable;
+6. its canonical form uses `/`, Unicode NFC, and no trailing slash except for a
+   filesystem root; on Windows, lowercase the complete path with the runtime's
+   locale-independent Unicode lowercase operation;
+7. derive the slug from the basename with Unicode NFKD, combining-mark
+   removal, lowercase, runs outside `[a-z0-9]` replaced by `-`, `-` trimming,
+   a 48-character limit, another trim, and `project` when empty;
+8. append `-` and the first eight lowercase hexadecimal characters of the
+   canonical path's UTF-8 SHA-256.
+
+Two distinct canonical paths are two distinct project contexts. Hosts that
+need identity independent of location must provide an explicit project ID.
+When several host workspace roots remain ambiguous, use `--global-only`; do
+not pass a project ID or choose an arbitrary root or current directory.
 
 Use `--all-projects` only when the user asks for cross-project knowledge or
 when that wider scope is clearly required. Do not broaden scope merely because
@@ -123,7 +151,8 @@ When no runnable helper exists:
 
 1. Search only `<memory-root>/bundles/` and
    `<memory-root>/projects/<current-project-id>/`, unless all projects were
-   explicitly requested.
+   explicitly requested. For ambiguous multi-root routing, search only
+   `<memory-root>/bundles/`.
 2. Ignore `index.md`, `log.md`, symlinks, and files without valid concept
    frontmatter containing a non-empty `type`.
 3. Read each candidate only from the opening `---` through the closing `---`.
@@ -149,7 +178,7 @@ The canonical `scripts/query-memory.mjs` is inspectable UTF-8 source, has no
 dependency, carries no executable bit, and is copied with the canonical skill
 package.
 
-During install, audit, repair, or update:
+During fresh installation:
 
 1. If Node.js exists, run the canonical helper's isolated `--self-test`.
 2. Otherwise test the same file with an already installed compatible Bun or
@@ -179,10 +208,13 @@ During install, audit, repair, or update:
 8. If the user declines or installation fails, retain the manual fallback and
    report only that the fast path is unavailable.
 
-Tests must cover the required Wiki Soul project-ID vectors, current versus all
-project scope, accent and case normalization, quoted phrases, field weights,
-coverage bonus, unknown matching fields, deterministic limits, invalid
-frontmatter, symlink exclusion, and proof that body-only terms never match.
+Tests must cover explicit project-ID priority and invalid-ID fallback, trusted
+absolute directory workspace-root and current-directory fallback, POSIX,
+Windows-drive and UNC-root path canonicalization, distinct-path identity,
+ambiguous multi-root global-only behavior, current versus all project scope,
+accent and case normalization, quoted phrases, field weights, coverage bonus,
+unknown matching fields, deterministic limits, invalid frontmatter, symlink
+exclusion, and proof that body-only terms never match.
 They must also cover mapping and list forms of `verified`, human and machine
 trust tiers, stale and fresh concepts, generation newer than verification,
 absent and deprecated status, nested `sources`, and deterministic v0.2

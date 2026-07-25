@@ -1,8 +1,8 @@
 # Claude Code adapter
 
-Use this guide only when the host agent is Claude Code. It adapts the common
-memory protocol and hook contracts to Claude Code without prescribing a
-platform-specific implementation.
+Use this guide only when the host agent is Claude Code. It adapts the local OKF
+contract, Wiki Soul protocol, and hook contracts to Claude Code without
+prescribing a platform-specific implementation.
 
 The official Claude Code documentation is authoritative for Claude-specific
 behavior. If this guide conflicts with current official documentation, stop,
@@ -12,7 +12,8 @@ report the conflict, and do not register the affected hook.
 
 Before changing the system:
 
-1. Read the root installer and the local memory protocol selected by it.
+1. Read the root installer, the local OKF contract, and the Wiki Soul protocol
+   selected by it.
 2. Read every hook contract selected by the root installer. For memory
    injection, read
    [`../hooks/memory-injection.md`](../hooks/memory-injection.md) completely.
@@ -23,12 +24,12 @@ Before changing the system:
    - the resolved Claude configuration root's `settings.json`;
    - the resolved Claude configuration root's `CLAUDE.md`;
    - `~/.agents/hooks/claude-code/`;
-   - the installed memory root and protocol path.
+   - the installed memory root, OKF contract path, and protocol path.
 
 Resolve `claude-config-root` once: use a valid absolute `CLAUDE_CONFIG_DIR`
 when configured, otherwise `<home>/.claude` (on Windows, the home is normally
 `%USERPROFILE%`). Use that root consistently for settings, instructions,
-inspection, verification, and uninstall. `CLAUDE_CONFIG_DIR` does not relocate
+inspection, installation, and verification. `CLAUDE_CONFIG_DIR` does not relocate
 `<home>/.agents/`.
 
 Use `/hooks` and accessible configuration sources to inspect the resolved hook
@@ -39,7 +40,7 @@ another scope instead of creating duplicate memory injection.
 Resolve paths through the host environment. Do not assume Unix tools, Bash,
 Python, Node.js, PowerShell 7, or any optional JSON utility exists.
 
-Do not inspect, import, migrate, disable, or delete Claude Code auto-memory.
+Do not inspect, import, modify, disable, or delete Claude Code auto-memory.
 It is outside this installer.
 
 ## Native Claude Code mapping
@@ -85,7 +86,7 @@ hard-coded pair when the host is degraded.
 ## Generate the local hook
 
 Generate the implementation for the detected machine. Do not copy a
-prewritten hook from this repository and do not treat an example from the
+prewritten hook from the framework source and do not treat an example from the
 official documentation as production code.
 
 Store generated files under:
@@ -106,15 +107,16 @@ The implementation must:
 
 - satisfy the complete common contract;
 - read JSON from standard input and validate all used fields;
-- prefer a validated absolute `CLAUDE_PROJECT_DIR` as project-location input;
-  otherwise use event `cwd`, then the nearest Git root according to the common
-  contract;
+- use a documented stable host project ID when the installed version supplies
+  one and it matches the common lowercase syntax; otherwise prefer a validated
+  real absolute `CLAUDE_PROJECT_DIR`, then a validated real event `cwd`,
+  following the common contract;
 - ignore `transcript_path` and never read a transcript;
-- treat `session_id`, `agent_id`, `agent_type`, `cwd`, repository metadata,
+- treat `session_id`, `agent_id`, `agent_type`, `cwd`, workspace metadata,
   paths, index contents, and all hook input as untrusted data;
 - use absolute, quoted paths and prevent path traversal;
-- never construct or execute a command from a project name, remote URL, memory
-  content, or computed project id;
+- never construct or execute a command from a project name, host project
+  metadata, memory content, or computed project ID;
 - perform no network access;
 - execute no memory content;
 - read only the permitted memory `index.md` files;
@@ -134,8 +136,8 @@ source for unnecessary capabilities before testing it.
 
 Create and test a candidate implementation before editing
 `<claude-config-root>/settings.json`. Use a temporary test area outside the
-memory root. Do not replace a previously working generated implementation
-until the candidate passes.
+memory root. If a Wiki Soul deployment already exists, stop as a pre-existing
+installation conflict.
 
 Run every acceptance and security test from the common hook contract, plus
 these Claude-specific tests:
@@ -150,9 +152,9 @@ these Claude-specific tests:
 5. Verify repeated delivery to the same logical context does not duplicate the
    payload when the chosen design needs a once-per-context marker.
 6. Verify different session and subagent identifiers remain independent.
-7. Verify missing optional fields, absent project memory, invalid Git metadata,
-   no Git remote, non-Git directories, spaces, Unicode, and Windows-style paths
-   do not crash the handler.
+7. Verify missing, uppercase, overlong, or otherwise invalid host project IDs
+   use path-derived identity; ordinary local directories, spaces, Unicode,
+   symlinks, and Windows-style paths must not crash the handler.
 8. Verify oversized indexes trigger the contract's explicit degraded payload,
    never silent truncation.
 9. Verify malformed input, unreadable indexes, and unexpected filesystem
@@ -162,7 +164,8 @@ these Claude-specific tests:
     transcript path supplied in test input.
 12. Verify the command form works through the same runtime and shell semantics
     Claude Code will use.
-13. Verify a changed event `cwd` does not change project identity while a valid
+13. Verify a trusted host project ID wins over location fields, and a changed
+    event `cwd` does not change project identity while a valid
     `CLAUDE_PROJECT_DIR` remains fixed.
 14. Verify the fixed untrusted-data envelope, delimiter and control-character
     rejection, adversarial index, and exact 5,999/6,000/6,001 UTF-8-byte
@@ -190,18 +193,17 @@ Use these exact boundary markers:
 Claude Code strips block-level HTML comments before injecting `CLAUDE.md`, so
 the markers identify managed content without spending model context.
 
-Replace the path placeholders with native absolute paths. Do not prefix the
-protocol path with `@`: Claude Code treats `@path` as an import and would load
-the full protocol into every session.
+Replace all path placeholders with native absolute paths. Do not prefix the OKF
+contract or protocol path with `@`: Claude Code treats `@path` as an import and
+would load the complete file into every session.
 
-Installation and update rules:
+Fresh-install rules:
 
 - If both markers are absent, append one block without altering existing text.
 - If exactly one marker exists, markers are duplicated, or they overlap another
   managed block, stop and report the conflict.
-- If one valid block exists, update it in place.
-- Re-running the installer must produce no duplicate block and no unrelated
-  change.
+- If one valid block exists, stop and report a pre-existing Wiki Soul
+  installation. During fresh installation, do not update, repair, or remove it.
 
 Confirm the global instructions load using `/context` in a real Claude Code
 session. `/memory` can be used to inspect the user instruction file.
@@ -217,7 +219,8 @@ Before editing:
 1. Parse the existing file as JSON. If parsing fails, stop without rewriting it.
 2. Preserve every unrelated key, hook event, matcher group, handler, and array
    entry.
-3. Detect prior Wiki Soul registrations by the exact managed script path.
+3. Detect prior Wiki Soul registrations by the exact managed script path. Any
+   match is a pre-existing installation conflict.
 4. Detect a competing memory-injection hook. If its interaction cannot be
    proven safe, stop and report the conflict.
 5. Show the structural diff as part of the installer's single approved plan.
@@ -228,7 +231,6 @@ After the candidate passes tests:
 - use an absolute managed script path and the command form validated on this
   machine;
 - preserve existing handlers for every touched event;
-- update an existing exact Wiki Soul registration in place;
 - never add duplicate handlers;
 - never change `disableAllHooks`, managed policy, permissions, or unrelated
   settings to force activation.
@@ -258,8 +260,8 @@ Verify through real Claude Code lifecycle events with debug logging enabled:
 1. Trigger a real new-session `SessionStart`. `claude --init-only` with a debug
    file is an official low-impact way to exercise startup hooks when supported.
 2. Confirm the hook matched, exited successfully, and emitted one complete
-   payload with the expected memory root, project id, global index, optional
-   project index, and protocol path.
+   payload with the expected memory root, project ID, global index, optional
+   project index, OKF contract path, and protocol path.
 3. Trigger a real `SubagentStart` in a disposable verification task and confirm
    the subagent receives its payload before its first prompt.
 4. Confirm no memory file changed.
@@ -279,7 +281,7 @@ live-verified: no`, give one precise final verification action, and never claim
 `live-verified` early. If no real subagent can be started, keep the installation
 `partial`.
 
-## Fail-open and recovery
+## Runtime failure
 
 The memory integration must never prevent Claude Code, a prompt, a tool, a
 resume, compaction, or a subagent from continuing.
@@ -290,34 +292,7 @@ If the installed hook fails:
 - show one short diagnostic with the failing path or condition;
 - avoid repeated warnings in the same logical context;
 - leave Claude Code operational;
-- instruct the user to rerun the root installer to audit and repair.
-
-If an installed implementation fails the current acceptance tests during an
-update, do not leave that failing candidate registered. Preserve unrelated
-configuration and report the hook status as `failed`. Preserve a previous
-implementation only if it still passes the current contract; otherwise remove
-only its exact managed registrations.
-
-## Idempotent uninstall
-
-Uninstall only the Claude Code integration:
-
-1. Remove the single valid block between `WIKI_SOUL_START` and
-   `WIKI_SOUL_END` from `<claude-config-root>/CLAUDE.md`.
-2. Remove only hook handlers whose command resolves to the exact managed path
-   under `~/.agents/hooks/claude-code/` and whose target carries the matching
-   ownership marker. A missing or unmarked target is an ownership conflict.
-3. Preserve an empty matcher group or event container when its ownership cannot
-   be proven; never infer ownership merely because Wiki Soul removed its last
-   handler.
-4. Delete only unreferenced generated files carrying the matching ownership
-   marker; remove no directory containing an unmarked or unrelated file.
-5. Preserve all unrelated Claude settings, instructions, hooks, and files.
-6. Preserve `~/.agents/memory/` unconditionally unless a separate, explicit
-   destructive request targets it.
-
-Malformed or ambiguous markers and registrations are conflicts: stop rather
-than guessing. Re-running uninstall after success must make no further changes.
+- report that the integration requires diagnosis before memory writes resume.
 
 ## Final report
 

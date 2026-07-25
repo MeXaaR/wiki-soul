@@ -8,7 +8,8 @@ description: Transform user-selected files, folders, native agent memory, or exp
 # Wiki Soul Ingest
 
 Convert selected source material into curated Wiki Soul memory. Treat the
-installed memory protocol as authoritative and keep every source read-only.
+installed compact OKF contract as normative, the Wiki Soul protocol as its
+operational profile, and every source as read-only.
 
 ## Establish scope
 
@@ -16,8 +17,8 @@ installed memory protocol as authoritative and keep every source read-only.
    does not authorize ingestion.
 2. Resolve the requested file, directory, or native-memory source. Accept an
    optional target project and optional inclusion or exclusion guidance.
-3. Resolve the Wiki Soul memory root and read its complete `protocol.md` before
-   planning any write.
+3. Resolve the Wiki Soul memory root and read complete `okf-0.2.md` and
+   `protocol.md` before planning any write.
 4. Verify that every proposed destination bundle declares
    `okf_version: "0.2"`. If a destination is absent, create it directly as
    OKF 0.2 after approval. If it declares another version or has no version
@@ -63,11 +64,11 @@ Build a bounded inventory of the requested source:
 - links or aliases that could leave the requested source boundary;
 - available local readers and the likely cost of processing.
 
-Choose exclusions from the user's domain and the source's purpose. For a
-software repository, `.git`, dependency trees, caches, and build output are
-common examples, not a universal exclusion list. Explain material exclusions
-in the plan. Never follow a symbolic link outside the selected source unless
-the user explicitly expands scope.
+Choose exclusions from the user's domain and the source's purpose. Dependency
+trees, caches, and build output are common software-project examples, not a
+universal exclusion list. Explain material exclusions in the plan. Never
+follow a symbolic link outside the selected source unless the user explicitly
+expands scope.
 
 Guarantee directly readable text formats only, including Markdown, plain text,
 source code, JSON, and YAML. Process PDF, DOCX, and other document containers

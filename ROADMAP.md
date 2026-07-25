@@ -40,14 +40,14 @@ Value: Let a user install from one repository URL.
 
 Acceptance criteria:
 
-- [x] Main installer covers fresh install, audit, repair, and update.
+- [x] Main installer creates a fresh OKF 0.2 installation only.
 - [x] Generic fallback installs the memory core without a certified hook.
 - [x] Uninstaller removes managed integration and preserves memory.
 
 Verification:
 
-- Walked fresh, existing, conflicting, update, uninstall, and unsupported-agent
-  paths against the normative contracts.
+- Walked fresh, conflicting, uninstall, and unsupported-agent paths against
+  the normative contracts.
 
 ### Slice 3: Memory protocol
 
@@ -59,6 +59,8 @@ Acceptance criteria:
 
 - [x] Protocol covers routing, project identity, write thresholds, validation,
       safety, maintenance, and single-writer constraint.
+- [x] Project identity uses explicit or host-provided workspace context, with a
+      normalized local-path fallback and no external project-system dependency.
 - [x] Installed critical block stays short.
 - [x] Example memory structure is OKF-compatible.
 
@@ -121,8 +123,8 @@ Acceptance criteria:
       files remain untouched.
 - [x] When no safe local global-rules file exists, critical instructions are
       injected once per logical context within the existing 6,000-byte limit.
-- [x] Registration, live verification, fail-open behavior, idempotent update,
-      and uninstall are specified.
+- [x] Registration, live verification, fail-open behavior, fresh-install
+      collision handling, and uninstall are specified.
 
 Verification:
 
@@ -176,7 +178,8 @@ Acceptance criteria:
 - [x] System-prompt reconstruction adds one bounded envelope per model request
       without accumulating conversation messages.
 - [x] New session, resume, compaction, child-session, `--pure`, failure,
-      update, and uninstall behavior have explicit verification requirements.
+      fresh-install, and uninstall behavior have explicit verification
+      requirements.
 - [x] Packages, auth, sessions, existing memories, and client-project files
       remain untouched.
 
@@ -219,8 +222,8 @@ Acceptance criteria:
       subagents while preserving one memory writer.
 - [x] Sources remain read-only; secrets, raw transcripts, and raw tool output
       never enter memory.
-- [x] Skill audit, repair, update, uninstall, partial failure, and final
-      installation offer are specified.
+- [x] Skill fresh-install, collision handling, uninstall, partial failure, and
+      final installation offer are specified.
 
 Verification:
 
@@ -255,10 +258,17 @@ Acceptance criteria:
       references, are preserved and validated without execution.
 - [x] Fresh installation creates the memory core, protocol, subject bundles,
       and project bundles directly as OKF 0.2.
-- [x] Installation uses an immutable, checksummed local OKF 0.2 snapshot and
-      never depends on mutable upstream OKF state.
-- [x] Audit, repair, maintenance, and ingestion accept installed destinations
-      declaring OKF 0.2 and report other version states as conflicts.
+- [x] Installation uses the bundled lossless compact OKF 0.2 contract; the
+      checksummed full snapshot remains maintainer-only and mutable upstream
+      state is never consulted.
+- [x] The standard is compiled into a lossless compact contract preserving
+      normative levels, definitions, shapes, defaults, exceptions, and section
+      coverage.
+- [x] Fresh installation stores that contract as
+      `~/.agents/memory/okf-0.2.md`; the separate protocol contains Wiki Soul
+      behavior and conventions.
+- [x] Maintenance and ingestion accept installed destinations declaring OKF
+      0.2 and report other version states as conflicts.
 - [x] Installer, protocol, maintenance, query, ingestion, hooks, skills,
       uninstall, examples, and product documentation share the same 0.2
       contract.
@@ -274,7 +284,6 @@ Verification:
 ## Discovered Follow-ups
 
 - Add adapters for Gemini CLI and other agents.
-- Add optional Git backup hook.
 - Add a concurrency protocol only if real usage requires multiple writers.
 
 ## Risks / Blockers
@@ -284,7 +293,8 @@ Verification:
 - OpenCode's experimental system transform may also run for auxiliary model
   requests. Its provider boundary, non-persistence, and overhead must be
   reverified for every installed version.
-- `main` is mutable. The installer must audit behavior on every rerun.
+- Published framework contents may evolve. Each fresh install uses only the
+  bundled compact OKF contract and never compares mutable upstream state.
 - Generated hook code is nondeterministic. Acceptance tests are the stable
   contract.
 - Native skill surfaces vary by agent and version. Installation must inspect

@@ -1,8 +1,8 @@
 # OpenCode adapter
 
-Use this guide only when the current host is OpenCode. It adapts the common
-memory protocol and every hook contract in this repository to OpenCode's
-user-global rules and plugin runtime.
+Use this guide only when the current host is OpenCode. It adapts the local OKF
+contract, Wiki Soul protocol, and every hook contract in the framework source
+to OpenCode's user-global rules and plugin runtime.
 
 Current official OpenCode documentation, the installed OpenCode version, and
 the installed plugin type contract are authoritative for OpenCode-specific
@@ -13,8 +13,8 @@ leave the affected hook unregistered.
 
 ## Authority and scope
 
-1. Follow the main installer, installed memory protocol, and every Markdown
-   contract under `../hooks/`.
+1. Follow the main installer, installed local OKF contract, Wiki Soul protocol,
+   and every Markdown contract under `../hooks/`.
 2. Install only user-global OpenCode integration. Do not create `AGENTS.md`,
    `opencode.json`, `.opencode/`, plugins, or other files in a client project.
 3. Do not install an npm package, Bun package, MCP server, daemon, database, or
@@ -22,7 +22,7 @@ leave the affected hook unregistered.
 4. Do not modify the OpenCode executable, installed package, application
    bundle, source tree, session database, authentication store, or unrelated
    plugins.
-5. Do not inspect, import, migrate, disable, or delete OpenCode sessions,
+5. Do not inspect, import, modify, disable, or delete OpenCode sessions,
    credentials, shares, or an existing memory product.
 6. Use file mode for critical instructions. Never inject a duplicate operating
    rules section from the memory plugin.
@@ -61,7 +61,8 @@ Before proposing changes:
      `output.system: string[]`;
    - a session identifier in that hook when the installed version documents
      one;
-   - project `directory` and `worktree` values at plugin initialization;
+   - a project `directory` or equivalent current-workspace root at plugin
+     initialization;
    - child-session model requests using the same plugin pipeline;
    - a restart or clean new-process path;
    - resolved-config and plugin-load diagnostics.
@@ -83,7 +84,7 @@ At the time this adapter was written, OpenCode 1.18.4 exposed:
   `{ sessionID, model }` input and `{ system: string[] }` output;
 - no stable `agent`, `small`, or request-purpose discriminator in that
   system-transform input;
-- `directory`, `worktree`, and project metadata at plugin initialization;
+- `directory` and project metadata at plugin initialization;
 - `opencode debug paths`, `opencode debug config`, startup logs, `--pure`,
   resume, fork, and subagent sessions.
 
@@ -112,7 +113,7 @@ Inspect:
 - global, custom-directory, project, and managed plugin inventories for
   collision detection;
 - `<home>/.agents/hooks/opencode/`;
-- the installed Wiki Soul memory root and protocol;
+- the installed Wiki Soul memory root, OKF contract, and protocol;
 - normal launch flags or wrappers that disable external plugins or rules.
 
 Modify only the selected user-global instruction file, one adapter-owned
@@ -148,8 +149,9 @@ Use `file` instruction mode. Select one safe surface:
    - place the exact managed block in that file;
    - add its exact absolute path to the global `instructions` array;
    - prove OpenCode combines it with the existing fallback.
-4. If a prior exact Wiki Soul custom-instruction entry exists, reuse its
-   owned file rather than creating another.
+4. If a prior Wiki Soul instruction block, custom-instruction entry, plugin
+   registration, or deployment exists, stop and report a pre-existing
+   installation conflict.
 
 Never edit, move, or remove a Claude fallback file merely to configure
 OpenCode. Never leave the managed block in both the native rules file and an
@@ -183,9 +185,9 @@ directory. Do not publish or install an npm plugin. Do not import
 If the installed version cannot register an exact local path from global
 config but does document global plugin auto-discovery, a thin marked global
 loader MAY reference the exact immutable revision only after its complete
-source, ownership, load, update, and uninstall behavior is included in the
-approved plan and test suite. If no exact, removable, user-global registration
-can be proven, leave the hook unsupported.
+source, ownership, and load behavior is included in the approved plan and test
+suite. If no exact user-global registration can be proven, leave the hook
+unsupported.
 
 OpenCode loads plugins at process or server startup. A file or config entry is
 not active in an already-running process until the installed surface proves a
@@ -249,27 +251,26 @@ sessions. Do not rely on a process-global "already injected" marker.
 
 ## Project location and identity
 
-Treat `directory`, `worktree`, project metadata, Git output, repository remotes,
-session IDs, model metadata, config paths, and all filesystem content as
-untrusted data.
+Treat `directory`, project metadata, session IDs, model metadata, config paths,
+and all filesystem content as untrusted data.
 
-1. Prefer a validated, real, absolute OpenCode `worktree` when it represents
-   the current project.
-2. Otherwise use the validated initialization `directory`, then find the
-   nearest Git root with an argument-safe process API.
-3. Apply the common remote selection, normalization, hashing, and local
-   fallback rules exactly.
-4. Do not reuse OpenCode's internal project ID. It has different semantics and
-   may represent non-Git directories as one global project.
+1. Use an OpenCode project ID only when current official documentation proves
+   it is host-controlled, stable for the same work context, and valid under the
+   common lowercase syntax.
+2. Otherwise use the validated real absolute initialization `directory` when
+   current documentation identifies it as the current workspace root.
+3. Otherwise use a validated real absolute current working directory.
+4. Apply the common path normalization, slug, and hashing rules exactly.
 5. Do not derive identity from a session title, prompt, agent name, model,
-   config value controlled by a repository, or environment variable supplied
-   by project content.
-6. If project identity is ambiguous or unsafe, inject global memory plus the
-   common concise project-routing diagnostic instead of guessing.
+   workspace-controlled config value, or environment variable supplied by
+   workspace content.
+6. If multiple roots remain ambiguous or identity is unsafe, inject global
+   memory plus the common concise project-routing diagnostic instead of
+   guessing.
 
-Use an argument-array process API when Git is needed. Never pass
-repository-controlled text through a shell command string. Do not expose a
-remote URL or credential in output, logs, state, or diagnostics.
+Project detection and identity require no subprocess. Never pass
+workspace-controlled text through a shell command string. Do not expose
+sensitive host project metadata in output, logs, state, or diagnostics.
 
 ## Generate the plugin
 
@@ -305,7 +306,8 @@ The implementation must:
 - keep the complete model-visible string within 6,000 UTF-8 bytes;
 - work with supported providers that accept one or multiple system messages;
 - preserve OpenCode's existing system entries and other plugin output;
-- avoid console output containing paths, remotes, payloads, or secrets.
+- avoid console output containing paths, host project metadata, payloads, or
+  secrets.
 
 An in-process plugin has no exit status to make fail-open. Its fail-open
 equivalent is a callback that resolves successfully after adding either safe
@@ -329,11 +331,13 @@ Run every acceptance and security test in the common hook contract, plus:
    process-global state.
 6. Prove separate parent and child session IDs cannot leak project or failure
    state between contexts.
-7. Prove initialization uses validated `worktree` or `directory` and never the
-   internal OpenCode project ID as the Wiki Soul ID.
+7. Prove a trusted stable OpenCode project ID wins only when it matches the
+   common lowercase syntax; uppercase, overlong, and otherwise invalid IDs must
+   use a validated real workspace `directory` or current working directory in
+   that order.
 8. Prove a callback error, malformed hook input, missing optional session ID,
-   unsupported model metadata, filesystem denial, and invalid Git metadata all
-   resolve without rejecting the model request.
+   unsupported model metadata, filesystem denial, and invalid project-location
+   metadata all resolve without rejecting the model request.
 9. Prove one complete diagnostic is appended after failure and no partial
    envelope survives.
 10. Prove 5,999 and 6,000 UTF-8 bytes are accepted and 6,001 bytes degrades
@@ -363,15 +367,16 @@ the candidate passes.
 Parse the selected user-global OpenCode JSON or JSONC file structurally. If no
 config exists, create the smallest canonical global config only after the
 production candidate passes. If multiple global alternatives are active,
-reuse the source containing a prior exact Wiki Soul entry; otherwise choose
-the current documented canonical file and report the other active sources.
+choose the current documented canonical file and report the other active
+sources. Any prior Wiki Soul entry in any source is a pre-existing installation
+conflict.
 
 For the `plugin` array:
 
 - preserve every unrelated key, comment when practical, plugin, option, and
   ordering;
 - add one exact absolute `file://` specifier for the immutable entrypoint;
-- replace an older exact marked Wiki Soul revision in place;
+- stop if an older marked Wiki Soul revision exists;
 - avoid duplicate paths, equivalent path aliases, and a simultaneous
   auto-discovered copy;
 - never replace the full array;
@@ -404,7 +409,7 @@ surface.
 
 1. Start a clean session in a disposable project and prove the model receives
    one envelope with the correct memory root, project ID, global index, project
-   index or absence message, and protocol path.
+   index or absence message, OKF contract path, and protocol path.
 2. Prove the managed instruction block is present exactly once in the
    assembled instructions and the envelope contains no duplicate operating
    rules.
@@ -448,43 +453,16 @@ The main installer also requires every discovered skill to be native-loaded or
 have a ready manual fallback. A pending or failed skill makes the overall
 installation `partial`.
 
-## Failure, update, and removal
+## Runtime failure
 
 Runtime failure must:
 
 - resolve every plugin callback successfully;
 - append at most one concise diagnostic to that model request;
-- expose no prompt, message, session data, credential, remote URL, provider
-  option, or environment dump;
+- expose no prompt, message, session data, credential, host project metadata,
+  provider option, or environment dump;
 - inject no partial or ambiguous index data;
 - leave OpenCode and all normal tools operational.
-
-On update or repair, reread current official docs and the installed plugin
-contract. Leave a conforming deployment unchanged. Otherwise generate and
-test a new revision, replace only the exact global plugin entry, restart, and
-live-verify before retiring the old revision.
-
-Uninstall this adapter by:
-
-1. removing only the exact global `plugin` entry targeting a marked Simple
-   Soul deployment under `<home>/.agents/hooks/opencode/`;
-2. removing the managed block from the native OpenCode instruction file, or
-   removing the exact custom `instructions` entry and its marked adapter-owned
-   file when fallback-preserving mode was used;
-3. never editing or removing a Claude fallback rules file;
-4. restarting the affected OpenCode process or server;
-5. deleting only unreferenced marked generated files and no directory
-   containing an unowned file;
-6. preserving every unrelated global or project config, rule, plugin, session,
-   credential, memory product, client project, and
-   `<home>/.agents/memory/`.
-
-Do not delete OpenCode's native `AGENTS.md` merely because removing the managed
-block leaves it empty. A dedicated adapter-owned instruction file may be
-deleted only when its ownership is unambiguous and no active config references
-it.
-
-Uninstall remains a displayed, confirmed global change.
 
 ## Final report
 

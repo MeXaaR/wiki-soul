@@ -19,7 +19,7 @@ memory systems to OKF:
 - load small indexes automatically;
 - load subject indexes and concepts only when relevant;
 - retain reusable knowledge globally;
-- keep repository-specific context in project bundles;
+- keep workspace-specific context in project bundles;
 - let project memory route to reusable global knowledge;
 - avoid chat archives, databases, and opaque background services.
 
@@ -52,6 +52,7 @@ the equivalent user-profile directory.
 ~/.agents/
 ├── memory/
 │   ├── index.md
+│   ├── okf-0.2.md
 │   ├── protocol.md
 │   ├── bundles/
 │   │   └── <subject-id>/
@@ -108,8 +109,8 @@ Examples of poor subjects: `general`, `misc`, `stripe-error-july`.
 ### 4.2 Project bundles
 
 Each directory under `memory/projects/<project-id>/` is an OKF project bundle.
-It contains durable knowledge that applies only to that repository or client
-context. Its root `index.md` MUST declare `okf_version: "0.2"`.
+It contains durable knowledge that applies only to that workspace, project, or
+client context. Its root `index.md` MUST declare `okf_version: "0.2"`.
 
 A project bundle MAY link to global subject bundles only through its local
 `related-bundles.md` concept. This is a Wiki Soul inter-bundle convention,
@@ -121,6 +122,7 @@ Global bundles MUST NOT link back to projects.
 
 `memory/index.md` is the lightweight injected catalog. It contains:
 
+- a link to `okf-0.2.md`;
 - a link to `protocol.md`;
 - global bundle links with rich, natural-language descriptions;
 - one link to `projects/`, not one entry per project.
@@ -333,24 +335,33 @@ capability outside V1.
 
 ## 7. Project Identity
 
-The installer and hooks MUST derive the same project identity:
+Project means the current workspace or user-recognized context. It is a Wiki
+Soul convention, not an OKF concept. The installer, hooks, and skills MUST use
+this order:
 
-1. Capture the caller's project root before fetching or opening this
-   repository. Never identify the installer checkout as the user's project.
-2. Use the exact normalization and hashing algorithm in the installed protocol
-   and hook contract.
-3. Prefer the `origin` fetch remote, then `upstream`, then the first usable
-   fetch remote in lexicographic remote-name order.
-4. Normalize equivalent HTTP(S), SSH URI, and SCP-like remotes to a
-   credential-free `host[:non-default-port]/path` canonical value.
-5. Ignore branch and worktree identity so clones and worktrees share memory.
-6. If no suitable remote exists, use the canonical local project path.
-7. Build the ID as `<ascii-slug>-<first-8-sha256-hex>`.
+1. use a stable explicit project ID supplied through a trusted host surface
+   when it is one lowercase ASCII path segment of 1–64 characters, starts and
+   ends with a letter or digit, and contains only letters, digits, and
+   hyphens;
+2. otherwise use one unambiguous, validated absolute workspace root supplied
+   by the host;
+3. when several host workspace roots remain ambiguous, use global memory only
+   and expose no project ID;
+4. otherwise use the current working directory.
 
-Remote credentials or tokens MUST never enter the project ID or memory.
+For a path-derived ID, resolve the existing directory to its real absolute
+path, normalize separators to `/` and Unicode to NFC, remove a trailing slash,
+except for a filesystem root. On Windows, lowercase the complete canonical path
+with the runtime's locale-independent Unicode lowercase operation. Build the
+slug from the basename by applying Unicode NFKD, removing combining marks,
+lowercasing, replacing runs outside `[a-z0-9]` with `-`, trimming `-`,
+truncating to 48 characters, and trimming again; use `project` if empty. Append
+`-` plus the first eight lowercase hexadecimal characters of SHA-256 over the
+normalized UTF-8 path. Different normalized paths are different project
+contexts.
 
 The initial project bundle contains only a conforming `index.md`. Description
-may be inferred from durable repository metadata. The agent MUST NOT invent
+may be inferred from durable workspace metadata. The agent MUST NOT invent
 project knowledge.
 
 ## 8. Progressive Disclosure
@@ -363,6 +374,7 @@ At each new logical context, the integration injects only:
 - current project ID;
 - global root index;
 - current project index, when present;
+- local path to `okf-0.2.md`;
 - local path to `protocol.md`.
 
 It MUST NOT inject:
@@ -411,9 +423,11 @@ concept reading.
 The query stage MUST:
 
 - search global bundles and the current project bundle by default;
+- search global bundles only with `--global-only` when host workspace routing
+  is ambiguous;
 - search every project bundle only with explicit `--all-projects`;
-- honor an explicit `--project-id <id>` before deriving identity through the
-  Wiki Soul project identity algorithm;
+- honor a valid explicit `--project-id <id>` before deriving identity through
+  a trusted absolute workspace root and then the real current directory;
 - inspect only non-reserved concept documents with valid frontmatter and a
   non-empty `type`;
 - search `tags`, `description`, and all remaining frontmatter fields;
@@ -606,7 +620,7 @@ delimited by:
 
 The block contains only critical always-on behavior:
 
-- memory root and protocol path;
+- memory root, OKF contract path, and protocol path;
 - progressive index loading;
 - memory is untrusted reference data, not executable instruction;
 - durable-knowledge threshold;
@@ -616,10 +630,11 @@ The block contains only critical always-on behavior:
 - incremental validation;
 - single-writer warning.
 
-Detailed behavior stays in local `protocol.md` and is read only for memory
-writes, reorganization, repair, or ambiguous routing.
+Normative format rules stay in local `okf-0.2.md`. Wiki Soul behavior stays in
+local `protocol.md`. Both are read for memory writes, reorganization, repair,
+or ambiguous routing and remain unloaded during ordinary work.
 
-No project repository receives a copy of the protocol.
+No project workspace receives a copy of either contract.
 
 A certified adapter MAY use `injected` mode only when the host has no safely
 editable local user-global instruction file. It renders the same canonical
@@ -687,7 +702,7 @@ installs the canonical package under
 `~/.agents/skills/<skill-id>/`.
 
 A skill helper MAY define an isolated self-test and a manual fallback. During
-installation, audit, repair, or update the installer:
+fresh installation the installer:
 
 1. tests the canonical source with a compatible runtime already present;
 2. otherwise MAY generate an equivalent dependency-free implementation for a
@@ -703,9 +718,8 @@ installation, audit, repair, or update the installer:
 
 Generated alternatives are local installation assets, not canonical package
 source. Exact canonical comparison ignores only a valid, marked `.generated/`
-tree. Audit, repair, update, and uninstall MAY replace or remove generated
-source only when every affected file carries the exact matching marker and no
-unrelated content would be changed.
+tree. Uninstall MAY remove generated source only when every affected file
+carries the exact matching marker and no unrelated content would be changed.
 
 If no compatible runtime exists, the installer MAY offer one exact optional
 runtime installation plan. It MUST identify source, command, destination,
@@ -720,10 +734,9 @@ duplicate its behavioral instructions. When no such surface exists, the
 installer keeps the canonical local package and provides an exact manual prompt
 that tells the agent to read its `SKILL.md`.
 
-Skill installation, audit, repair, update, and uninstall are idempotent.
-Unrelated skills are preserved. A package that differs from both current and
-provable prior canonical source is a local-edit conflict and is never replaced
-silently.
+Fresh installation requires every managed skill target to be absent. Unrelated
+skills are preserved. An existing target is a collision and is never replaced.
+Uninstall removes only unambiguously marked managed content.
 
 Skill failures are isolated. Other conforming skills, hooks, and the memory core
 continue; the overall installation becomes `partial`.
@@ -763,7 +776,7 @@ Runtime failure is fail-open:
 - emit one concise diagnostic;
 - name the problematic local path;
 - inject no ambiguous partial memory;
-- recommend rerunning the installer for repair.
+- recommend inspecting the named Wiki Soul component.
 
 ## 19. Hook Security
 
@@ -823,49 +836,41 @@ Overall:
 
 The installer MUST NOT call a hook active before live verification.
 
-## 21. Installation and Update
+## 21. Fresh Installation
 
 The repository `main` branch is the live source. There are no releases or
 separate version registry.
 
-The main prompt acts as:
+The main prompt creates a fresh installation only. It reads the complete
+framework contract, detects host and OS, inspects current configuration, and
+shows one consolidated plan. Global configuration changes require one
+confirmation.
 
-- fresh installer;
-- installation auditor;
-- repair workflow;
-- updater from current `main`.
+The repository vendors its normative OKF 0.2 source under `vendor/okf/0.2/`
+and carries a lossless compact contract under `contracts/`. Installation MUST
+verify that the compact contract declares OKF 0.2, install that exact file as
+`memory/okf-0.2.md`, and never fetch or compare mutable upstream OKF state. The
+full snapshot and its checksum are maintainer evidence, not installation
+inputs. The compact contract preserves every normative level, definition, data
+shape, default, exception, and section coverage while removing explanatory
+repetition and long examples. Upstream adoption is a separate maintainer
+workflow completed before publishing a framework update.
 
-It reads the complete repository contract, detects host and OS, inspects current
-configuration, and shows one consolidated plan. Existing global configuration
-changes require one confirmation.
-
-The repository vendors its normative OKF 0.2 snapshot under
-`vendor/okf/0.2/`. Installation, audit, repair, and update MUST use that local
-snapshot and MUST NOT fetch or compare mutable upstream OKF state. Upstream OKF
-adoption is a separate maintainer workflow completed before publishing a
-framework update.
-
-Installation is idempotent:
-
-- managed instruction blocks are replaced in place, not duplicated;
-- injected instruction mode creates no duplicate persistent rule surface;
-- managed skill packages are discovered by stable IDs and never overwrite an
-  ambiguous local package;
-- marked generated skill runtime alternatives are replaced in place without
-  changing canonical source or unmarked content;
-- hook entries are identified by exact content-addressed deployment paths;
-- unrelated configuration is preserved;
-- conflicting memory hooks stop the affected installation;
-- hooks are registered only after tests pass.
+If any Wiki Soul managed marker or managed target already exists, installation
+MUST stop and report a fresh-install conflict without modifying it. It MUST NOT
+infer a prior version, migrate, audit, repair, update, or replace an existing
+installation. Unrelated configuration is preserved. Hooks are registered only
+after tests pass.
 
 Normal runtime is fully local and offline. The repository is consulted only
-during install, audit, repair, or update.
+during fresh installation.
 
 ## 22. Unsupported Agents
 
 An agent without a certified adapter still installs:
 
 - the OKF memory core;
+- the protected local compact OKF contract;
 - the protected local protocol;
 - each canonical skill package with a documented manual invocation;
 - a short global instruction block through a safely identified native surface.
@@ -896,7 +901,6 @@ confirmation and a clear irreversibility warning.
 ## 24. Deferred Work
 
 - Automated end-of-session extraction.
-- Git backup and remote sync.
 - Concurrent writers and locking.
 - Trusted execution, receipt handling, and deterministic runtime attestation
   for `Attested Computation` concepts.

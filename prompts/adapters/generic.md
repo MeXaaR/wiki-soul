@@ -7,6 +7,11 @@ Use this adapter only when no certified host adapter exists.
 Install the Wiki Soul memory core and short global instructions without
 inventing an unsupported automatic hook integration.
 
+This adapter supports fresh installation only. During that operation, any
+existing Wiki Soul managed block or integration is a pre-existing installation
+conflict; do not update, repair, replace, or remove it. A separately invoked
+uninstall follows its own explicit removal contract.
+
 ## Discovery
 
 Before changing anything:
@@ -49,17 +54,20 @@ List discovered hooks as `unsupported`, not `failed`.
 The global instruction block tells the agent to:
 
 1. read the root memory index at a new session;
-2. determine the project ID using the installed protocol;
+2. resolve the current project from a trusted host project ID valid under the
+   common lowercase syntax, trusted workspace root, or real current working
+   directory as defined by the installed Wiki Soul protocol;
 3. read the current project index when it exists;
 4. retrieve subject indexes and concepts on demand;
-5. follow the full local protocol before a memory write.
+5. read the local OKF contract and Wiki Soul protocol before every memory
+   write, reorganization, repair, or format ambiguity.
 
 ## Report
 
 Report:
 
-- memory core: installed, unchanged, repaired, or failed;
-- global instructions: installed, unchanged, or unavailable;
+- memory core: installed or failed;
+- global instructions: installed or unavailable;
 - skills: use the main installer's native-loaded or manual-fallback status;
 - automatic injection: unsupported;
 - overall installation: `partial` when the memory core works without a

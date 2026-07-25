@@ -1,8 +1,8 @@
 # Pi Coding Agent adapter
 
 Use this guide only when the current host is Pi Coding Agent. It adapts the
-common memory protocol and every hook contract in this repository to Pi's
-self-extensible runtime.
+local OKF contract, Wiki Soul protocol, and every hook contract in the
+framework source to Pi's self-extensible runtime.
 
 Current official Pi documentation and the installed Pi package are
 authoritative for Pi-specific behavior. Pi evolves quickly. If the installed
@@ -28,21 +28,19 @@ exists. None is required to bootstrap Wiki Soul:
 4. The running Pi process then uses `/reload`, or a fresh process, to load the
    new extension.
 
-Pi may therefore extend itself, but it MUST NOT edit Pi's installed package or
-mutate a loaded Wiki Soul deployment in place. Every repair or update creates
-a new tested content-addressed revision, switches the registration, and reloads
-the runtime.
+Pi may therefore extend itself, but it MUST NOT edit Pi's installed package.
+Any loaded Wiki Soul deployment is a pre-existing installation conflict.
 
 ## Authority and scope
 
-1. Follow the main installer, installed memory protocol, and every Markdown
-   contract under `../hooks/`.
+1. Follow the main installer, installed local OKF contract, Wiki Soul protocol,
+   and every Markdown contract under `../hooks/`.
 2. Install only user-global Pi integration. Do not add `.pi/`, `.agents/`, or
    instruction files to a client project.
 3. Do not install a Pi package, npm dependency, daemon, database, or service.
 4. Do not modify Pi source, its installed package, third-party packages, or
    unrelated extensions.
-5. Do not inspect, import, migrate, disable, or delete Pi sessions, credentials,
+5. Do not inspect, import, modify, disable, or delete Pi sessions, credentials,
    or an existing memory product.
 6. Use file mode for critical instructions when Pi exposes its documented
    user-global context file. Do not duplicate those rules in the extension.
@@ -69,7 +67,7 @@ Before proposing changes:
    - reload behavior;
    - security and execution permissions.
 3. Cross-check current official Pi documentation from the package's official
-   repository.
+source.
 4. Prove the installed version provides documented equivalents for the
    behavior this adapter needs:
    - a user-global context file;
@@ -105,9 +103,9 @@ That version note is evidence, not a frozen schema.
 
 Choose the integration path from evidence:
 
-1. If a marked Wiki Soul extension is already registered, audit that exact
-   revision against the current contracts. Leave it unchanged when conforming;
-   otherwise stage a replacement revision.
+1. If a marked Wiki Soul extension, instruction block, registration, or
+   deployment already exists, stop and report a pre-existing installation
+   conflict.
 2. If no Wiki Soul extension is registered but explicit `-e` loading and the
    required native lifecycle API exist, use the bootstrap sequence in this
    adapter. A missing hook framework is not a blocker.
@@ -116,7 +114,7 @@ Choose the integration path from evidence:
    chain two memory systems silently.
 4. If only a third-party hook framework exposes relevant events, do not adopt
    it merely because it is installed. Use it only if the user explicitly
-   chooses that dependency and the repository contract is updated to certify
+   chooses that dependency and the framework contract is updated to certify
    it; ordinary Wiki Soul installation remains package-free.
 5. If the installed Pi lacks a documented safe lifecycle or exact
    user-global extension registration, install only the memory core and global
@@ -133,7 +131,7 @@ Inspect:
 - extension paths and packages enabled by user settings;
 - project-local extensions visible to the current trusted project, only for
   collision detection;
-- the installed Wiki Soul memory root and protocol;
+- the installed Wiki Soul memory root, OKF contract, and protocol;
 - generated assets under `<home>/.agents/hooks/pi/`;
 - available native runtimes and exact command semantics.
 
@@ -216,14 +214,6 @@ by the model, return one exact user action: type `/reload`, then continue live
 verification. Do not generate a second bootstrap extension solely to automate
 that action.
 
-For every later repair or update:
-
-- generate and test a new revision;
-- replace only the exact old Wiki Soul path in user settings;
-- reload;
-- keep the old revision until the new one is live-verified;
-- never edit either revision in place.
-
 ## Pi lifecycle mapping
 
 Derive the smallest conforming mapping from the installed API. For current Pi
@@ -262,7 +252,7 @@ Map current native lifecycle classes as follows when available:
 | New session | `session_start` with `new` |
 | Resume | `session_start` with `resume`; refresh only when restoration requires it |
 | Fork or clone | `session_start` with `fork` |
-| Runtime bootstrap/update | `session_start` with `reload` |
+| Runtime bootstrap/reload | `session_start` with `reload` |
 | Post-compaction | `session_compact`, after the compaction entry exists |
 | Tree/context branch change | `session_tree`, with active-branch ownership check |
 
@@ -290,18 +280,22 @@ report the class as not applicable rather than inventing one.
 
 ## Project location
 
-Treat `ctx.cwd`, session paths, Git output, and repository remotes as untrusted
-inputs.
+Treat `ctx.cwd`, host project metadata, session paths, and filesystem content
+as untrusted inputs.
 
-1. Use Pi's validated absolute current working directory.
-2. Find the nearest Git root with an argument-safe process API.
-3. Apply the common remote-selection, normalization, hashing, and local
-   fallback rules exactly.
-4. Do not derive identity from a session filename, project setting, extension
-   setting, prompt, or environment variable controlled by repository content.
-5. Do not require project trust to read the Git metadata needed for identity.
-6. If project identity is ambiguous or unsafe, inject global memory plus the
-   contract's concise project-routing diagnostic instead of guessing.
+1. Use a Pi project ID only when current official documentation proves it is
+   host-controlled, stable for the same work context, and valid under the common
+   lowercase syntax.
+2. Otherwise use a trusted workspace root supplied by Pi when available.
+3. Otherwise use Pi's validated real absolute `ctx.cwd`.
+4. Apply the common path normalization, slug, and hashing rules exactly.
+5. Do not derive identity from a session filename, project setting, extension
+   setting, prompt, or environment variable controlled by workspace content.
+6. If multiple roots remain ambiguous or identity is unsafe, inject global
+   memory plus the contract's concise project-routing diagnostic instead of
+   guessing.
+
+Project detection and identity require no subprocess and no project trust.
 
 ## Generate the extension
 
@@ -362,6 +356,10 @@ Run every acceptance and security test in the common hook contract, plus:
     client project, or deployed revision.
 15. For each enabled subagent mechanism, prove a real child context receives
     exactly one bounded envelope, or report that mechanism unsupported.
+16. Prove a documented trusted Pi project ID wins only when it matches the
+    common lowercase syntax. Uppercase, overlong, or otherwise invalid IDs use
+    location; a trusted workspace root wins over `ctx.cwd`, different real
+    paths remain distinct, and ambiguous roots produce global-only routing.
 
 Use a disposable home or dependency-injected pure helpers for fixtures. The
 production path must still resolve the real operating-system user home. Do not
@@ -378,7 +376,7 @@ Use the documented `extensions` array:
 - preserve every unrelated setting, package, extension path, exclusion, and
   ordering when practical;
 - add one exact absolute path to the content-addressed Wiki Soul entrypoint;
-- replace an older exact marked Wiki Soul revision in place;
+- stop if an older marked Wiki Soul revision exists;
 - avoid duplicates and equivalent path aliases;
 - do not copy the implementation into Pi's auto-discovery directory;
 - do not add Wiki Soul as a Pi package;
@@ -400,7 +398,7 @@ Live verification requires a real Pi model context.
    system prompt.
 4. Confirm the first model context contains exactly one reference envelope
    with the correct memory root, project ID, global index, project index or
-   absence message, and protocol path.
+   absence message, OKF contract path, and protocol path.
 5. Confirm no operating-rules duplicate, concept, project registry, session
    content, prompt, or tool result appears in the envelope.
 6. Exercise a second ordinary prompt and a multi-tool turn; prove no new
@@ -430,32 +428,15 @@ The main installer also requires every discovered skill to be native-loaded or
 have a ready manual fallback. A pending or failed skill makes the overall
 installation `partial`.
 
-## Failure, update, and removal
+## Runtime failure
 
 Runtime failure must:
 
 - append at most one concise diagnostic for the logical context;
-- expose no prompt, session path, credential, remote URL, or environment dump;
+- expose no prompt, session path, credential, host project metadata, or
+  environment dump;
 - inject no partial or ambiguous index data;
 - leave Pi and its built-in tools operational.
-
-On update or repair, reread the installed Pi documentation and current official
-docs. Leave a conforming deployment unchanged. Otherwise create a new revision,
-test it, switch the exact settings entry, reload, and live-verify before
-retiring the old revision.
-
-Uninstall this adapter by:
-
-1. removing only the exact user-global `extensions` entry targeting a marked
-   Wiki Soul deployment under `<home>/.agents/hooks/pi/`;
-2. removing only the managed global instruction block;
-3. reloading or restarting Pi;
-4. deleting only unreferenced marked generated files, and no directory
-   containing an unowned file;
-5. preserving all other settings, extensions, packages, project resources,
-   sessions, credentials, memories, and `<home>/.agents/memory/`.
-
-Uninstall remains a displayed, confirmed global change.
 
 ## Final report
 
@@ -481,5 +462,5 @@ Report:
 - [Session format](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/session-format.md)
 - [Security](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/security.md)
 
-If these paths move, locate replacements only in the official repository named
-by the installed package metadata. Do not guess a changed API.
+If these paths move, locate replacements only in the official source named by
+the installed package metadata. Do not guess a changed API.

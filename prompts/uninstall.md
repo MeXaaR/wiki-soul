@@ -2,6 +2,10 @@
 
 Remove Wiki Soul integrations safely while preserving memory by default.
 
+This is a separate, explicitly requested operation. Fresh-install collision
+rules in the installer, adapters, and hook contracts do not prohibit the exact
+managed removals authorized here.
+
 ## Read Before Acting
 
 Read:

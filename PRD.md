@@ -34,7 +34,9 @@ service, or network access.
 - Add agent hooks through behavioral specifications rather than shipped code.
 - Install declarative skills from one canonical, agent-portable source.
 - Curate explicitly selected files, folders, or native memories into bundles.
-- Update, repair, or uninstall integrations without damaging existing config.
+- Install without overwriting existing managed or unrelated configuration.
+- Uninstall integrations separately without damaging memory or unrelated
+  configuration.
 
 ## Scope
 
@@ -48,8 +50,10 @@ service, or network access.
   and source credibility signals.
 - Passive preservation and validation of Attested Computation contracts.
 - Global subject bundles and project bundles.
-- Git-remote-based project identity with a local fallback.
+- Workspace-context project identity from an explicit ID, host-provided root,
+  or normalized local path.
 - Global agent instructions with a small managed rule block.
+- A local, protected, lossless compact OKF 0.2 contract.
 - A local, protected, detailed memory protocol.
 - A common Markdown contract for every hook.
 - Claude Code, Codex, Cursor, Pi, and OpenCode adapters.
@@ -68,7 +72,6 @@ service, or network access.
 - Automatic ingestion during installation.
 - Destructive modification or removal of native agent memory.
 - Raw conversation or transcript archival.
-- Git initialization, remote backup, or automatic commits.
 - Automatic end-of-session extraction.
 - A standalone general-purpose CLI, MCP server, package, daemon, vector
   database, or hosted service.
@@ -84,12 +87,12 @@ service, or network access.
 ### Main Flow
 
 1. The user gives the repository URL to a local agent.
-2. The agent reads the main installer, protocol, its adapter, every hook
-   contract, and every skill package.
+2. The agent reads the main installer, compact OKF contract, Wiki Soul
+   protocol, its adapter, every hook contract, and every skill package.
 3. The agent detects its host and operating system.
 4. It inspects existing global configuration and presents one complete plan.
 5. The user confirms once.
-6. The agent creates or updates memory, skills, instructions, and hooks.
+6. The agent creates memory, skills, instructions, and hooks.
 7. Every skill is validated, every skill helper is isolated-tested when
    runnable, and every hook is tested before activation.
 8. The agent reports exact per-skill, per-hook, and overall status.
@@ -97,17 +100,15 @@ service, or network access.
    import without inspecting any concept body or ingestion source until the
    user requests that separate operation.
 
-### Existing Installation
+### Fresh Installation
 
-- The same prompt acts as installer, auditor, repairer, and updater from
-  `main`.
-- Existing Wiki Soul bundles must already declare `okf_version: "0.2"`;
-  unsupported or missing version declarations are reported as conflicts.
-- Managed blocks are idempotent and never duplicated.
-- Managed skill packages are updated in place only when ownership and source
-  history are unambiguous.
-- Existing unrelated instructions, skills, and hooks are preserved.
-- Conflicts stop the affected change and are reported.
+- The installer creates Wiki Soul directly as OKF 0.2.
+- It performs no migration, audit, repair, or update of an existing Wiki Soul
+  installation.
+- Any existing Wiki Soul managed marker or target is a fresh-install conflict.
+- Existing managed and unrelated content is preserved unchanged.
+- Framework-version changes are handled by maintainers before publication and
+  are invisible to installation users.
 
 ### Error State
 
@@ -125,8 +126,10 @@ service, or network access.
   include inspectable, dependency-free, non-executable helper source, but no
   runtime, binary, dependency tree, or ingestion runtime ships with the
   repository.
-- The vendored OKF 0.2 snapshot is normative for this framework release. Wiki
-  Soul conventions must remain compatible and must be labeled as conventions.
+- The vendored OKF 0.2 snapshot is the maintainer source. Its lossless compact
+  contract is installed locally and remains normative for user operations.
+  Wiki Soul conventions live separately in the protocol, remain compatible,
+  and are labeled as conventions.
 - Every autonomous bundle targets OKF 0.2. Its root index declares
   `okf_version: "0.2"`.
 - Every new or meaningfully changed concept writes truthful `generated`
@@ -141,7 +144,7 @@ service, or network access.
 - Hook code is local, read-only, bounded, offline, and least-privilege.
 - Runtime injection contains only critical operating rules when the adapter
   requires injected instruction mode, the global index, current project index,
-  paths, and project identity.
+  contract paths, and project identity.
 - Automatic payload limit: at most 6,000 UTF-8 bytes for the complete
   model-visible additional-context string.
 - Normal writes validate only touched concepts and affected indexes.
@@ -178,8 +181,14 @@ service, or network access.
       instructions.
 - [x] Every autonomous bundle created by a fresh install conforms to OKF 0.2;
       root catalogues follow the documented Wiki Soul catalogue rules.
-- [x] Installation reads the immutable local OKF 0.2 snapshot and never fetches
-      or compares mutable upstream OKF state.
+- [x] Installation reads the bundled lossless compact OKF 0.2 contract, never
+      the full maintainer snapshot, and never fetches or compares mutable
+      upstream OKF state.
+- [x] A lossless compact OKF 0.2 contract preserves every normative level,
+      definition, shape, default, and exception while removing explanatory
+      repetition and is installed at `~/.agents/memory/okf-0.2.md`.
+- [x] Project identity uses an explicit ID, a trusted workspace root, or a
+      normalized local path without relying on an external project system.
 - [x] New or meaningfully changed concepts use `generated`. Managed concepts
       use `verified` only with evidence, derived trust tiers, explicit
       `status`, optional
@@ -189,7 +198,8 @@ service, or network access.
       credibility score is introduced.
 - [x] Attested Computation contracts are indexed and validated without
       automatic execution or stored runtime receipts.
-- [x] Re-running installation creates no duplicate managed blocks or hooks.
+- [x] Re-running installation detects the existing managed installation,
+      changes nothing, and reports a fresh-install conflict.
 - [x] A hook cannot be registered until its isolated tests pass.
 - [x] Reports distinguish `generated`, `registered`, and `live-verified`.
 - [x] Runtime failures do not block normal agent work.
@@ -216,7 +226,7 @@ service, or network access.
 
 ## Open Questions
 
-- None blocking V1. Additional adapters, backup, and concurrency are explicitly
+- None blocking V1. Additional adapters and concurrency are explicitly
   deferred.
 
 [llm-wiki]: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f

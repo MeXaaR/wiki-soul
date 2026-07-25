@@ -1,7 +1,7 @@
 # Reorganize Wiki Soul Memory
 
-Use this prompt to maintain an installed Wiki Soul memory. Follow the local
-`~/.agents/memory/protocol.md` before acting.
+Use this prompt to maintain an installed Wiki Soul memory. Follow local
+`~/.agents/memory/okf-0.2.md` and `~/.agents/memory/protocol.md` before acting.
 
 ## Determine Scope
 

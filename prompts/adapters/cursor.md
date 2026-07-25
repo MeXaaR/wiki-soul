@@ -1,8 +1,8 @@
 # Cursor adapter
 
-Use this guide only when the current host is Cursor. It adapts the common
-memory protocol and every hook contract in this repository to the installed
-Cursor environment.
+Use this guide only when the current host is Cursor. It adapts the local OKF
+contract, Wiki Soul protocol, and every hook contract in the framework source
+to the installed Cursor environment.
 
 The current official Cursor documentation and the installed Cursor version are
 authoritative for Cursor-specific behavior. If either conflicts with this
@@ -11,17 +11,18 @@ and leave the affected hook unregistered.
 
 ## Authority and scope
 
-1. Read the root installer, installed memory protocol, and every direct
-   `../hooks/*.md` contract completely.
-2. Treat official OKF as authoritative for knowledge format.
+1. Read the root installer, installed local OKF contract, Wiki Soul protocol,
+   and every direct `../hooks/*.md` contract completely.
+2. Treat the installed local OKF contract as authoritative for knowledge
+   format.
 3. Install only user-global Cursor integration. Do not create `AGENTS.md`,
    `.cursor/rules/`, `.cursor/hooks.json`, or any other file in a client
    project.
-4. Do not read, import, migrate, disable, or delete the content of Cursor's own
+4. Do not read, import, modify, disable, or delete the content of Cursor's own
    memories or User Rules.
 5. Do not install packages or a new runtime.
 6. Generate the smallest local hook implementation for the detected machine;
-   never copy canonical hook code from this repository.
+   never copy canonical hook code from the framework source.
 7. Keep normal operation local, offline, read-only, bounded, and fail-open.
 
 ## Verify the installed Cursor contract
@@ -65,7 +66,7 @@ Inspect:
 - the availability and storage model of Cursor User Rules through supported
   Cursor surfaces, without reading their content;
 - `<home>/.agents/hooks/cursor/`;
-- the installed Wiki Soul memory root and protocol;
+- the installed Wiki Soul memory root, OKF contract, and protocol;
 - available local runtimes and their exact command semantics.
 
 In current injected mode, modify only `<home>/.cursor/hooks.json` and marked
@@ -96,8 +97,8 @@ user-global instruction file that can be merged safely and idempotently:
 2. Render the canonical critical rules from
    [`../install.md`](../install.md#7-install-the-critical-global-instructions)
    without the HTML boundary comments.
-3. Replace the memory and protocol placeholders with validated native absolute
-   paths.
+3. Replace the memory, OKF contract, and protocol placeholders with validated
+   native absolute paths.
 4. Put those rules in one `WIKI SOUL OPERATING RULES V1` section immediately
    before the common `WIKI SOUL REFERENCE DATA V1` envelope.
 5. Return the combined text through `sessionStart.additional_context` and
@@ -162,15 +163,18 @@ required fallback. Registration and live verification apply to that set.
 ## Project location
 
 Treat all hook input as untrusted, including `workspace_roots`, `cwd`,
-`conversation_id`, `subagent_id`, repository metadata, and paths.
+`conversation_id`, `subagent_id`, workspace metadata, and paths.
 
 For project detection:
 
-1. Prefer one validated absolute workspace root supplied by Cursor.
-2. If `cwd` is supplied and belongs to exactly one workspace root, use that
-   workspace root.
-3. Otherwise use a validated absolute `cwd`, then the nearest Git root.
-4. If a multi-root workspace remains ambiguous, inject global memory and an
+1. Prefer a documented, trusted, stable Cursor project ID when available and
+   valid under the common lowercase syntax.
+2. Otherwise prefer one validated real absolute workspace root supplied by
+   Cursor.
+3. If `cwd` is supplied and belongs to exactly one of several workspace roots,
+   use that workspace root.
+4. If no workspace root exists, use a validated real absolute `cwd`.
+5. If a multi-root workspace remains ambiguous, inject global memory and an
    explicit project-routing diagnostic instead of guessing a project ID.
 
 Ignore `prompt`, `task`, `transcript_path`, `agent_transcript_path`,
@@ -197,8 +201,8 @@ The implementation must:
 - read one JSON object from standard input;
 - validate every used field and ignore all unused sensitive fields;
 - read only the authorized global and project `index.md` files;
-- never read the protocol, concepts, Cursor rules, prompts, tasks, transcripts,
-  attachments, or tool content;
+- never read the OKF contract, protocol, concepts, Cursor rules, prompts,
+  tasks, transcripts, attachments, or tool content;
 - make no network request;
 - execute no memory or project content;
 - use no dynamic command evaluation;
@@ -236,8 +240,10 @@ isolated temporary fixtures, plus:
    6,001 bytes produces the contract's diagnostic-only form without
    truncation.
 8. Verify no debug text precedes or follows JSON.
-9. Verify one, zero, and multiple workspace roots behave deterministically and
-   that ambiguous multi-root input never selects a project arbitrarily.
+9. Verify a trusted valid lowercase host project ID wins; uppercase, overlong,
+   and otherwise invalid IDs fall back to location. One, zero, and multiple
+   workspace roots must behave deterministically; ambiguous multi-root input
+   must never select a project arbitrarily.
 10. Verify the exact command works through Cursor's own command-hook runtime,
     working directory, environment, and quoting semantics.
 11. Verify repeated invocation, separate conversations, background-agent
@@ -262,13 +268,13 @@ For each planned event:
 - set a short explicit timeout proven sufficient by tests;
 - set `failClosed: false` explicitly;
 - omit matchers for `sessionStart` and `subagentStart`;
-- update a prior exact Wiki Soul entry in place;
+- treat any prior Wiki Soul entry as a pre-existing installation conflict;
 - never duplicate an exact command;
 - never replace an existing event array;
 - never weaken enterprise or team policy.
 
-Detect Wiki Soul ownership through the exact command path and the generated
-source marker. A missing or unmarked prior target is a conflict.
+Detect any prior Wiki Soul entry through the exact command path and generated
+source marker. Stop before modifying configuration when one exists.
 
 After writing, parse the file again, compare the structural diff with the
 approved plan, and use Cursor Settings → Hooks to prove the entries resolve
@@ -285,8 +291,8 @@ Do not infer execution from files or unit tests.
 2. Confirm Settings → Hooks records the user `sessionStart` command, success
    exit, and bounded output.
 3. Prove the first model context received the correct memory root, project ID,
-   global index, project index or absence, protocol path, and—when used—the
-   operating-rules section.
+   global index, project index or absence, OKF contract path, protocol path,
+   and—when used—the operating-rules section.
 4. Start a real Cursor subagent and prove it receives the same routed context
    through `user_message`.
 5. Resume the conversation and exercise compaction when safely possible; prove
@@ -327,37 +333,10 @@ Runtime failure must leave Cursor usable:
 
 - exit successfully in the host's non-blocking form;
 - inject no partial index or operating-rules fragment;
-- expose no prompt, task, transcript, credential, remote URL, or environment
-  dump;
+- expose no prompt, task, transcript, credential, host project metadata, or
+  environment dump;
 - emit one short safe diagnostic in the documented model-visible field;
-- recommend rerunning the main installer.
-
-If an update discovers that the current registered implementation no longer
-passes, preserve it only when it still conforms to the current contract.
-Otherwise remove only its exact registration and report the hook as failed.
-
-## Update, repair, and uninstall
-
-On rerun, reread repository `main`, official Cursor documentation, the current
-schema, and every hook contract. Leave a conforming deployment unchanged.
-Deploy changed code at a new digest path and update only exact registrations.
-
-Uninstall this adapter by:
-
-1. removing only exact user hook entries whose targets are under
-   `<home>/.agents/hooks/cursor/` and carry the expected ownership marker;
-2. removing a marked local instruction block only when instruction mode
-   `file` was used;
-3. removing no Cursor User Rule in injected mode;
-4. deleting only unreferenced marked generated files and no directory
-   containing an unowned file;
-5. preserving every project, team, enterprise, plugin, compatibility, and
-   unrelated user hook;
-6. preserving all Cursor memories and User Rules;
-7. preserving `<home>/.agents/memory/`.
-
-Uninstall remains a planned, confirmed global change. Memory deletion is a
-separate destructive operation.
+- report that the integration requires diagnosis before memory writes resume.
 
 ## Final report
 

@@ -1,9 +1,10 @@
 # Vendored OKF 0.2
 
-Wiki Soul targets the immutable OKF 0.2 snapshot in [`SPEC.md`](SPEC.md).
-Installation, audit, repair, querying, ingestion, and maintenance use this
-local document. They do not fetch or compare the mutable upstream `main`
-branch.
+Wiki Soul targets the immutable OKF 0.2 snapshot in [`SPEC.md`](SPEC.md). This
+full file is maintainer evidence. Fresh installation copies its lossless
+[compact contract](../../../contracts/okf-0.2-compact.md); later user
+operations read the installed compact copy. Neither installation nor normal
+use fetches or compares the mutable upstream `main` branch.
 
 ## Provenance
 
@@ -23,5 +24,6 @@ The snapshot is byte-identical to the upstream file at the pinned commit.
 
 Do not update this snapshot during user installation. A maintainer adopts a
 new OKF version deliberately by reviewing the upstream change, updating Wiki
-Soul's complete contract and tests, replacing this snapshot, recording the new
-commit and checksum, then publishing a new framework version.
+Soul's complete contract and tests, replacing this snapshot, rebuilding and
+auditing the compact contract section by section, recording the new commit and
+checksum, then publishing a new framework version.
